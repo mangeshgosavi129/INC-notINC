@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "description": "Sample Pune corridor linking 5 intersections — NOT authoritative city data",
+    "note": "All values are configurable placeholders. Replace with real data when available."
+  },
+  "corridor": {
+    "corridor_id": "CORR_01",
+    "name": "Sample Pune Arterial Corridor",
+    "intersection_ids": ["INT_01", "INT_02", "INT_03", "INT_04", "INT_05"],
+    "links": [
+      {
+        "from_intersection": "INT_01",
+        "to_intersection": "INT_02",
+        "length_meters": 450,
+        "free_flow_speed_kmph": 40,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_02",
+        "to_intersection": "INT_03",
+        "length_meters": 520,
+        "free_flow_speed_kmph": 40,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_03",
+        "to_intersection": "INT_04",
+        "length_meters": 380,
+        "free_flow_speed_kmph": 35,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_04",
+        "to_intersection": "INT_05",
+        "length_meters": 500,
+        "free_flow_speed_kmph": 40,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      }
+    ]
+  }
+}

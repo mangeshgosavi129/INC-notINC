@@ -1,0 +1,98 @@
+{
+  "_meta": {
+    "description": "Sample Pune corridor configuration — NOT authoritative city data",
+    "note": "All values are configurable placeholders. Replace with real data when available."
+  },
+  "intersections": [
+    {
+      "intersection_id": "INT_01",
+      "name": "Corridor Intersection 1 (Sample)",
+      "lat": 18.5204,
+      "lon": 73.8567,
+      "approaches": ["N", "S", "E", "W"],
+      "movements": [
+        {"movement_id": "NBT", "from_approach": "N", "to_approach": "S", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "SBT", "from_approach": "S", "to_approach": "N", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "EBT", "from_approach": "E", "to_approach": "W", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "WBT", "from_approach": "W", "to_approach": "E", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800}
+      ],
+      "phases": [
+        {"phase_id": 1, "served_movements": ["NBT", "SBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0},
+        {"phase_id": 2, "served_movements": ["EBT", "WBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0}
+      ],
+      "rings": [{"ring_id": 1, "phase_sequence": [1, 2]}]
+    },
+    {
+      "intersection_id": "INT_02",
+      "name": "Corridor Intersection 2 (Sample)",
+      "lat": 18.5230,
+      "lon": 73.8590,
+      "approaches": ["N", "S", "E", "W"],
+      "movements": [
+        {"movement_id": "NBT", "from_approach": "N", "to_approach": "S", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "SBT", "from_approach": "S", "to_approach": "N", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "EBT", "from_approach": "E", "to_approach": "W", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "WBT", "from_approach": "W", "to_approach": "E", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800}
+      ],
+      "phases": [
+        {"phase_id": 1, "served_movements": ["NBT", "SBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0},
+        {"phase_id": 2, "served_movements": ["EBT", "WBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0}
+      ],
+      "rings": [{"ring_id": 1, "phase_sequence": [1, 2]}]
+    },
+    {
+      "intersection_id": "INT_03",
+      "name": "Corridor Intersection 3 (Sample)",
+      "lat": 18.5260,
+      "lon": 73.8615,
+      "approaches": ["N", "S", "E", "W"],
+      "movements": [
+        {"movement_id": "NBT", "from_approach": "N", "to_approach": "S", "movement_type": "through", "lanes": 3, "saturation_flow_vph": 1800},
+        {"movement_id": "SBT", "from_approach": "S", "to_approach": "N", "movement_type": "through", "lanes": 3, "saturation_flow_vph": 1800},
+        {"movement_id": "EBT", "from_approach": "E", "to_approach": "W", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "WBT", "from_approach": "W", "to_approach": "E", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800}
+      ],
+      "phases": [
+        {"phase_id": 1, "served_movements": ["NBT", "SBT"], "min_green": 12, "max_green": 50, "amber": 3.0, "all_red": 2.0},
+        {"phase_id": 2, "served_movements": ["EBT", "WBT"], "min_green": 10, "max_green": 40, "amber": 3.0, "all_red": 2.0}
+      ],
+      "rings": [{"ring_id": 1, "phase_sequence": [1, 2]}]
+    },
+    {
+      "intersection_id": "INT_04",
+      "name": "Corridor Intersection 4 (Sample)",
+      "lat": 18.5290,
+      "lon": 73.8640,
+      "approaches": ["N", "S", "E", "W"],
+      "movements": [
+        {"movement_id": "NBT", "from_approach": "N", "to_approach": "S", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "SBT", "from_approach": "S", "to_approach": "N", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "EBT", "from_approach": "E", "to_approach": "W", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "WBT", "from_approach": "W", "to_approach": "E", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800}
+      ],
+      "phases": [
+        {"phase_id": 1, "served_movements": ["NBT", "SBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0},
+        {"phase_id": 2, "served_movements": ["EBT", "WBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0}
+      ],
+      "rings": [{"ring_id": 1, "phase_sequence": [1, 2]}]
+    },
+    {
+      "intersection_id": "INT_05",
+      "name": "Corridor Intersection 5 (Sample)",
+      "lat": 18.5320,
+      "lon": 73.8665,
+      "approaches": ["N", "S", "E", "W"],
+      "movements": [
+        {"movement_id": "NBT", "from_approach": "N", "to_approach": "S", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "SBT", "from_approach": "S", "to_approach": "N", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "EBT", "from_approach": "E", "to_approach": "W", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800},
+        {"movement_id": "WBT", "from_approach": "W", "to_approach": "E", "movement_type": "through", "lanes": 2, "saturation_flow_vph": 1800}
+      ],
+      "phases": [
+        {"phase_id": 1, "served_movements": ["NBT", "SBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0},
+        {"phase_id": 2, "served_movements": ["EBT", "WBT"], "min_green": 10, "max_green": 45, "amber": 3.0, "all_red": 2.0}
+      ],
+      "rings": [{"ring_id": 1, "phase_sequence": [1, 2]}]
+    }
+  ]
+}

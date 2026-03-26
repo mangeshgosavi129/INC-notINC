@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "description": "Predefined event scenarios for demonstration and testing"
+  },
+  "scenarios": {
+    "ev_corridor_clearing": {
+      "description": "Ambulance traverses full corridor during peak hour",
+      "start_time_s": 600,
+      "events": [
+        {
+          "event_type": "ev_depart_origin",
+          "time_offset_s": 0,
+          "payload": {
+            "ev_id": "AMB_01",
+            "vehicle_type": "ambulance",
+            "corridor_id": "CORR_01",
+            "max_speed_kmph": 60
+          }
+        }
+      ]
+    },
+    "blockage_mid_corridor": {
+      "description": "Road blockage at intersection 3 link during EV transit",
+      "start_time_s": 300,
+      "events": [
+        {
+          "event_type": "blockage_start",
+          "time_offset_s": 0,
+          "payload": {
+            "from_intersection": "INT_02",
+            "to_intersection": "INT_03",
+            "capacity_reduction_pct": 50
+          }
+        },
+        {
+          "event_type": "blockage_end",
+          "time_offset_s": 600,
+          "payload": {
+            "from_intersection": "INT_02",
+            "to_intersection": "INT_03"
+          }
+        }
+      ]
+    },
+    "congestion_spike": {
+      "description": "Sudden traffic surge on cross-street",
+      "start_time_s": 900,
+      "events": [
+        {
+          "event_type": "congestion_spike",
+          "time_offset_s": 0,
+          "payload": {
+            "intersection_id": "INT_03",
+            "approach": "E",
+            "rate_multiplier": 2.5,
+            "duration_s": 300
+          }
+        }
+      ]
+    }
+  }
+}

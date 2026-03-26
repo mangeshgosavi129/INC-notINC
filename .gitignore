@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+frontend/admin-dashboard/dist/
+frontend/driver-dashboard/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

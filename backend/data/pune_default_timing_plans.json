@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "description": "Sample fixed-time timing plans for Pune corridor — NOT authoritative city data",
+    "note": "All values are configurable placeholders."
+  },
+  "timing_plans": [
+    {
+      "plan_id": "TP_INT01",
+      "intersection_id": "INT_01",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 0
+    },
+    {
+      "plan_id": "TP_INT02",
+      "intersection_id": "INT_02",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 12
+    },
+    {
+      "plan_id": "TP_INT03",
+      "intersection_id": "INT_03",
+      "phase_splits": {"1": 35, "2": 25},
+      "offset_s": 25
+    },
+    {
+      "plan_id": "TP_INT04",
+      "intersection_id": "INT_04",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 35
+    },
+    {
+      "plan_id": "TP_INT05",
+      "intersection_id": "INT_05",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 48
+    }
+  ]
+}
