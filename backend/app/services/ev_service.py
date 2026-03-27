@@ -7,11 +7,15 @@ from backend.app.services.simulation_service import simulation_service
 
 class EVService:
     def dispatch(self, run_id: str, ev_id: str, vehicle_type: str = "ambulance",
-                 corridor_id: str = "CORR_01", max_speed_kmph: float = 60.0) -> dict:
+                 corridor_id: str = "CORR_01", max_speed_kmph: float = 60.0,
+                 start_intersection: str | None = None,
+                 end_intersection: str | None = None) -> dict:
         simulation_service.dispatch_ev(
-            run_id, ev_id, vehicle_type, corridor_id, max_speed_kmph
+            run_id, ev_id, vehicle_type, corridor_id, max_speed_kmph,
+            start_intersection, end_intersection,
         )
-        return {"ev_id": ev_id, "status": "dispatched", "corridor_id": corridor_id}
+        return {"ev_id": ev_id, "status": "dispatched", "corridor_id": corridor_id,
+                "start_intersection": start_intersection, "end_intersection": end_intersection}
 
     def get_status(self, run_id: str) -> dict | None:
         return simulation_service.get_ev_status(run_id)

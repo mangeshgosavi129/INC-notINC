@@ -73,6 +73,9 @@ class SimulationState:
         self.ev: EmergencyVehicle | None = None
         self.ev_wait_start_time: float = 0.0
 
+        # EV sub-corridor (set when EV is dispatched with start/end)
+        self.ev_corridor: Corridor | None = None
+
         # Blockage factors: (from_id, to_id) -> capacity multiplier
         self.blockage_factors: dict[tuple[str, str], float] = {}
 
@@ -106,6 +109,17 @@ class SimulationState:
             from backend.app.simulation.ev_movement import compute_ev_progress
             ev_progress = compute_ev_progress(self.ev, self.corridor)
 
+        per_intersection = {}
+        for iid, iq in self.intersection_queues.items():
+            per_intersection[iid] = {
+                "total_queue": round(iq.total_queue(sim_time), 2),
+                "max_queue": round(iq.max_queue(sim_time), 2),
+                "per_movement": {
+                    mid: round(q.get_queue(sim_time), 2)
+                    for mid, q in iq.queues.items()
+                },
+            }
+
         metrics = {
             "sim_time": sim_time,
             "total_queue_length": round(total_queue, 2),
@@ -113,6 +127,7 @@ class SimulationState:
             "avg_queue_length": round(avg_queue, 2),
             "total_throughput": int(total_discharged),
             "ev_progress_pct": round(ev_progress, 1),
+            "per_intersection": per_intersection,
         }
         self.metrics_history.append(metrics)
         return metrics
@@ -270,11 +285,10 @@ class EventDrivenSimulator:
             if event is None:
                 break
 
-            # Broadcast on significant events
-            should_broadcast = event.payload.get("broadcast", False)
+            # Broadcast periodically to keep clients updated
             time_since_broadcast = self.clock.sim_time - last_broadcast_time
 
-            if should_broadcast and self._broadcast_callback and time_since_broadcast >= 0.1:
+            if self._broadcast_callback and time_since_broadcast >= 0.5:
                 snapshot = self.state.get_state_snapshot(self.clock.sim_time)
                 await self._broadcast_callback(snapshot)
                 last_broadcast_time = self.clock.sim_time
@@ -293,7 +307,9 @@ class EventDrivenSimulator:
 
     def dispatch_ev(self, ev_id: str, vehicle_type: str,
                     corridor_id: str, max_speed_kmph: float,
-                    sim_time: float) -> None:
+                    sim_time: float,
+                    start_intersection: str | None = None,
+                    end_intersection: str | None = None) -> None:
         """Dispatch an emergency vehicle onto the corridor."""
         from backend.app.simulation.ev_movement import dispatch_ev
 
@@ -304,7 +320,12 @@ class EventDrivenSimulator:
             max_speed_kmph=max_speed_kmph,
         )
         self.state.ev = ev
-        events = dispatch_ev(ev, self.state.corridor, sim_time)
+        events, effective_corridor = dispatch_ev(
+            ev, self.state.corridor, sim_time,
+            start_intersection, end_intersection,
+        )
+        # Use sub-corridor for EV traversal
+        self.state.ev_corridor = effective_corridor
         self.schedule_many(events)
 
     @property

@@ -12,9 +12,42 @@ class AnalyticsService:
             {"sim_time": m["sim_time"],
              "total_queue": m.get("total_queue_length", 0),
              "max_queue": m.get("max_queue_length", 0),
-             "avg_queue": m.get("avg_queue_length", 0)}
+             "avg_queue": m.get("avg_queue_length", 0),
+             "per_intersection": m.get("per_intersection", {})}
             for m in metrics
         ]
+
+    def get_ev_waterfall(self, run_id: str) -> list[dict]:
+        """Per-intersection wait times for EV journey waterfall chart."""
+        events = simulation_service.get_event_history(run_id, limit=5000)
+        waits: dict[str, float] = {}
+        wait_starts: dict[str, float] = {}
+
+        for e in events:
+            etype = e.get("event_type", "")
+            payload = e.get("payload", {}) or {}
+            iid = payload.get("intersection_id", "")
+            t = e.get("sim_time", 0)
+
+            if etype == "EV_ARRIVE_INTERSECTION" and iid:
+                wait_starts[iid] = t
+            elif etype == "EV_ENTER_INTERSECTION" and iid:
+                start = wait_starts.get(iid)
+                if start is not None:
+                    waits[iid] = t - start
+
+        state = simulation_service._states.get(run_id)
+        if state is None:
+            return []
+
+        result = []
+        for link in state.corridor.links:
+            iid = link.to_intersection
+            result.append({
+                "intersection_id": iid,
+                "wait_time_s": round(waits.get(iid, 0), 2),
+            })
+        return result
 
     def get_delay_history(self, run_id: str) -> list[dict]:
         metrics = simulation_service.get_metrics(run_id)

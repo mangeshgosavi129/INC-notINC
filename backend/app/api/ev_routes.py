@@ -14,7 +14,8 @@ async def dispatch_ev(run_id: str, req: EVDispatchRequest):
     try:
         result = ev_service.dispatch(
             run_id, req.ev_id, req.vehicle_type,
-            req.corridor_id, req.max_speed_kmph
+            req.corridor_id, req.max_speed_kmph,
+            req.start_intersection, req.end_intersection,
         )
         return result
     except ValueError as e:

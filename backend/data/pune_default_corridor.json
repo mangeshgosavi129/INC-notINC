@@ -1,18 +1,57 @@
 {
   "_meta": {
-    "description": "Sample Pune corridor linking 5 intersections — NOT authoritative city data",
-    "note": "All values are configurable placeholders. Replace with real data when available."
+    "description": "Pune city-wide traffic network - 20 intersections connected graph",
+    "note": "Scattered mesh, link distances scaled for ~5min EV transit"
   },
   "corridor": {
     "corridor_id": "CORR_01",
-    "name": "Sample Pune Arterial Corridor",
-    "intersection_ids": ["INT_01", "INT_02", "INT_03", "INT_04", "INT_05"],
+    "name": "Pune City Traffic Network",
+    "intersection_ids": [
+      "INT_01",
+      "INT_02",
+      "INT_03",
+      "INT_04",
+      "INT_05",
+      "INT_06",
+      "INT_07",
+      "INT_08",
+      "INT_09",
+      "INT_10",
+      "INT_11",
+      "INT_12",
+      "INT_13",
+      "INT_14",
+      "INT_15",
+      "INT_16",
+      "INT_17",
+      "INT_18",
+      "INT_19",
+      "INT_20"
+    ],
     "links": [
       {
         "from_intersection": "INT_01",
         "to_intersection": "INT_02",
-        "length_meters": 450,
-        "free_flow_speed_kmph": 40,
+        "length_meters": 330,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_01",
+        "to_intersection": "INT_17",
+        "length_meters": 336,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_01",
+        "to_intersection": "INT_03",
+        "length_meters": 389,
+        "free_flow_speed_kmph": 76,
         "num_lanes": 2,
         "capacity_vph": 3600,
         "ev_approach_movement": "SBT"
@@ -20,29 +59,452 @@
       {
         "from_intersection": "INT_02",
         "to_intersection": "INT_03",
-        "length_meters": 520,
-        "free_flow_speed_kmph": 40,
+        "length_meters": 336,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_02",
+        "to_intersection": "INT_04",
+        "length_meters": 367,
+        "free_flow_speed_kmph": 59,
         "num_lanes": 2,
         "capacity_vph": 3600,
         "ev_approach_movement": "SBT"
       },
       {
+        "from_intersection": "INT_02",
+        "to_intersection": "INT_17",
+        "length_meters": 391,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
         "from_intersection": "INT_03",
         "to_intersection": "INT_04",
-        "length_meters": 380,
-        "free_flow_speed_kmph": 35,
+        "length_meters": 307,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_03",
+        "to_intersection": "INT_05",
+        "length_meters": 397,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_03",
+        "to_intersection": "INT_19",
+        "length_meters": 361,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_04",
+        "to_intersection": "INT_05",
+        "length_meters": 287,
+        "free_flow_speed_kmph": 85,
         "num_lanes": 2,
         "capacity_vph": 3600,
         "ev_approach_movement": "SBT"
       },
       {
         "from_intersection": "INT_04",
-        "to_intersection": "INT_05",
-        "length_meters": 500,
-        "free_flow_speed_kmph": 40,
+        "to_intersection": "INT_01",
+        "length_meters": 387,
+        "free_flow_speed_kmph": 59,
         "num_lanes": 2,
         "capacity_vph": 3600,
         "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_04",
+        "to_intersection": "INT_19",
+        "length_meters": 363,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_05",
+        "to_intersection": "INT_02",
+        "length_meters": 406,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_05",
+        "to_intersection": "INT_01",
+        "length_meters": 404,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_05",
+        "to_intersection": "INT_19",
+        "length_meters": 450,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_06",
+        "to_intersection": "INT_13",
+        "length_meters": 434,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_06",
+        "to_intersection": "INT_08",
+        "length_meters": 436,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_06",
+        "to_intersection": "INT_09",
+        "length_meters": 477,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_07",
+        "to_intersection": "INT_15",
+        "length_meters": 334,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_07",
+        "to_intersection": "INT_16",
+        "length_meters": 542,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_07",
+        "to_intersection": "INT_14",
+        "length_meters": 481,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_08",
+        "to_intersection": "INT_09",
+        "length_meters": 284,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_08",
+        "to_intersection": "INT_14",
+        "length_meters": 304,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_08",
+        "to_intersection": "INT_01",
+        "length_meters": 457,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_09",
+        "to_intersection": "INT_14",
+        "length_meters": 316,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_09",
+        "to_intersection": "INT_01",
+        "length_meters": 501,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_09",
+        "to_intersection": "INT_07",
+        "length_meters": 473,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_10",
+        "to_intersection": "INT_17",
+        "length_meters": 363,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_10",
+        "to_intersection": "INT_01",
+        "length_meters": 430,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_10",
+        "to_intersection": "INT_11",
+        "length_meters": 449,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_11",
+        "to_intersection": "INT_17",
+        "length_meters": 577,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_11",
+        "to_intersection": "INT_02",
+        "length_meters": 644,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_12",
+        "to_intersection": "INT_13",
+        "length_meters": 435,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_12",
+        "to_intersection": "INT_06",
+        "length_meters": 651,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_13",
+        "to_intersection": "INT_08",
+        "length_meters": 593,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_13",
+        "to_intersection": "INT_09",
+        "length_meters": 559,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_14",
+        "to_intersection": "INT_01",
+        "length_meters": 474,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_14",
+        "to_intersection": "INT_02",
+        "length_meters": 502,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 3,
+        "capacity_vph": 5400,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_14",
+        "to_intersection": "INT_05",
+        "length_meters": 456,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_15",
+        "to_intersection": "INT_16",
+        "length_meters": 446,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_15",
+        "to_intersection": "INT_14",
+        "length_meters": 595,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_16",
+        "to_intersection": "INT_14",
+        "length_meters": 655,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_16",
+        "to_intersection": "INT_09",
+        "length_meters": 611,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_17",
+        "to_intersection": "INT_03",
+        "length_meters": 387,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_17",
+        "to_intersection": "INT_04",
+        "length_meters": 481,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_17",
+        "to_intersection": "INT_08",
+        "length_meters": 472,
+        "free_flow_speed_kmph": 85,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_18",
+        "to_intersection": "INT_20",
+        "length_meters": 339,
+        "free_flow_speed_kmph": 68,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_18",
+        "to_intersection": "INT_19",
+        "length_meters": 453,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "WBT"
+      },
+      {
+        "from_intersection": "INT_19",
+        "to_intersection": "INT_02",
+        "length_meters": 458,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_19",
+        "to_intersection": "INT_20",
+        "length_meters": 451,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "SBT"
+      },
+      {
+        "from_intersection": "INT_19",
+        "to_intersection": "INT_01",
+        "length_meters": 545,
+        "free_flow_speed_kmph": 59,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "EBT"
+      },
+      {
+        "from_intersection": "INT_20",
+        "to_intersection": "INT_05",
+        "length_meters": 459,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
+      },
+      {
+        "from_intersection": "INT_20",
+        "to_intersection": "INT_04",
+        "length_meters": 519,
+        "free_flow_speed_kmph": 76,
+        "num_lanes": 2,
+        "capacity_vph": 3600,
+        "ev_approach_movement": "NBT"
       }
     ]
   }

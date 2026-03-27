@@ -17,6 +17,8 @@ class EVDispatchRequest(BaseModel):
     vehicle_type: str = "ambulance"
     corridor_id: str = "CORR_01"
     max_speed_kmph: float = 60.0
+    start_intersection: str | None = None
+    end_intersection: str | None = None
 
 
 class EVRouteRequest(BaseModel):

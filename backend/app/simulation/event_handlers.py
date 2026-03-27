@@ -41,7 +41,7 @@ def handle_signal_phase_start(state: SimulationState,
     new_events: list[SimEvent] = []
     if state.ev is not None and state.ev.waiting_at_intersection == iid:
         # Check if EV's approach movement is now green
-        corridor = state.corridor
+        corridor = state.ev_corridor or state.corridor
         if state.ev.current_link_index < len(corridor.links):
             link = corridor.links[state.ev.current_link_index]
             if link.ev_approach_movement in green_movements:
@@ -116,7 +116,8 @@ def handle_ev_depart_origin(state: SimulationState,
     """EV dispatched — begin traveling to first intersection."""
     if state.ev is None:
         return []
-    return ev_depart_origin(state.ev, state.corridor, event.scheduled_time)
+    corridor = state.ev_corridor or state.corridor
+    return ev_depart_origin(state.ev, corridor, event.scheduled_time)
 
 
 def handle_ev_arrive_intersection(state: SimulationState,
@@ -155,8 +156,9 @@ def handle_ev_enter_intersection(state: SimulationState,
     iid = event.payload["intersection_id"]
     event.payload["broadcast"] = True
 
+    corridor = state.ev_corridor or state.corridor
     return ev_enter_intersection(
-        state.ev, state.corridor, iid, event.scheduled_time
+        state.ev, corridor, iid, event.scheduled_time
     )
 
 

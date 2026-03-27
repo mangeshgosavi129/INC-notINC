@@ -32,6 +32,11 @@ async def ev_journey(run_id: str):
     return summary
 
 
+@router.get("/ev-waterfall/{run_id}")
+async def ev_waterfall(run_id: str):
+    return analytics_service.get_ev_waterfall(run_id)
+
+
 @router.get("/compare-baseline")
 async def compare_baseline(mcts_run_id: str, baseline_run_id: str):
     try:

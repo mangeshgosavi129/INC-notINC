@@ -40,12 +40,74 @@ def compute_link_travel_time(link: CorridorLink, ev_speed_kmph: float,
     return link.length_meters / speed_mps
 
 
+def _find_shortest_path(corridor: Corridor, start: str, end: str) -> list[str] | None:
+    """BFS shortest path between two intersections using corridor links."""
+    from collections import deque
+
+    adj: dict[str, list[str]] = {}
+    for link in corridor.links:
+        adj.setdefault(link.from_intersection, []).append(link.to_intersection)
+        adj.setdefault(link.to_intersection, []).append(link.from_intersection)
+
+    if start not in adj:
+        return None
+
+    visited = {start}
+    queue: deque[list[str]] = deque([[start]])
+    while queue:
+        path = queue.popleft()
+        node = path[-1]
+        if node == end:
+            return path
+        for neighbor in adj.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(path + [neighbor])
+    return None
+
+
+def _build_sub_corridor(corridor: Corridor, route: list[str]) -> Corridor:
+    """Build a sub-corridor from a route (ordered list of intersection IDs)."""
+    sub_links: list[CorridorLink] = []
+    for i in range(len(route) - 1):
+        link = corridor.get_link(route[i], route[i + 1])
+        if link is None:
+            # Try reverse direction
+            link = corridor.get_link(route[i + 1], route[i])
+        if link is not None:
+            # Ensure direction matches route
+            sub_links.append(CorridorLink(
+                from_intersection=route[i],
+                to_intersection=route[i + 1],
+                length_meters=link.length_meters,
+                free_flow_speed_kmph=link.free_flow_speed_kmph,
+                num_lanes=link.num_lanes,
+                capacity_vph=link.capacity_vph,
+                ev_approach_movement=link.ev_approach_movement,
+            ))
+    return Corridor(
+        corridor_id=corridor.corridor_id,
+        name=corridor.name,
+        intersection_ids=route,
+        links=sub_links,
+    )
+
+
 def dispatch_ev(ev: EmergencyVehicle, corridor: Corridor,
-                sim_time: float) -> list[SimEvent]:
-    """Dispatch EV from corridor origin. Returns initial events."""
+                sim_time: float,
+                start_intersection: str | None = None,
+                end_intersection: str | None = None) -> tuple[list[SimEvent], Corridor]:
+    """Dispatch EV. Returns (initial events, effective corridor for this route)."""
+    effective_corridor = corridor
+
+    if start_intersection and end_intersection:
+        route = _find_shortest_path(corridor, start_intersection, end_intersection)
+        if route and len(route) >= 2:
+            effective_corridor = _build_sub_corridor(corridor, route)
+
     ev.status = EVStatus.DISPATCHED
     ev.dispatch_time = sim_time
-    ev.route = list(corridor.intersection_ids)
+    ev.route = list(effective_corridor.intersection_ids)
     ev.current_link_index = 0
     ev.position_on_link = 0.0
     ev.speed_kmph = ev.max_speed_kmph
@@ -57,11 +119,11 @@ def dispatch_ev(ev: EmergencyVehicle, corridor: Corridor,
             scheduled_time=sim_time,
             payload={
                 "ev_id": ev.ev_id,
-                "corridor_id": corridor.corridor_id,
+                "corridor_id": effective_corridor.corridor_id,
             },
             source="simulation",
         ),
-    ]
+    ], effective_corridor
 
 
 def ev_depart_origin(ev: EmergencyVehicle, corridor: Corridor,

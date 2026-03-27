@@ -1,0 +1,9 @@
+{
+  "name": "inc-frontend",
+  "private": true,
+  "workspaces": [
+    "shared-ui",
+    "admin-dashboard",
+    "driver-dashboard"
+  ]
+}

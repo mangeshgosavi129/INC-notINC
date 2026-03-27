@@ -86,14 +86,32 @@ class SimulationService:
         """Start simulation in real-time mode."""
         sim = self._get_sim(run_id)
 
+        last_decision_count = 0
+
         async def broadcast(snapshot):
+            nonlocal last_decision_count
             await ws_manager.broadcast_admin(run_id, {
                 "type": "state_update",
                 "data": snapshot,
                 "sim_time": snapshot.get("sim_time"),
             })
-            # Also send driver updates
+            # Broadcast new MCTS decisions since last broadcast
             state = self._states[run_id]
+            if (state.controller is not None
+                    and hasattr(state.controller, 'decision_history')):
+                history = state.controller.decision_history
+                while last_decision_count < len(history):
+                    d = history[last_decision_count]
+                    d_dict = d.to_dict()
+                    d_dict["decision_id"] = f"mcts_{last_decision_count}"
+                    d_dict["sim_time"] = snapshot.get("sim_time", 0)
+                    await ws_manager.broadcast_admin(run_id, {
+                        "type": "mcts_decision",
+                        "data": d_dict,
+                        "sim_time": snapshot.get("sim_time"),
+                    })
+                    last_decision_count += 1
+            # Also send driver updates
             if state.ev and state.ev.status != EVStatus.IDLE:
                 await self._send_driver_update(run_id, state)
 
@@ -145,10 +163,13 @@ class SimulationService:
         sim.clock.set_speed(speed)
 
     def dispatch_ev(self, run_id: str, ev_id: str, vehicle_type: str,
-                    corridor_id: str, max_speed_kmph: float) -> None:
+                    corridor_id: str, max_speed_kmph: float,
+                    start_intersection: str | None = None,
+                    end_intersection: str | None = None) -> None:
         sim = self._get_sim(run_id)
         sim.dispatch_ev(ev_id, vehicle_type, corridor_id,
-                        max_speed_kmph, sim.sim_time)
+                        max_speed_kmph, sim.sim_time,
+                        start_intersection, end_intersection)
 
     def get_state(self, run_id: str) -> dict:
         sim = self._get_sim(run_id)
@@ -196,8 +217,8 @@ class SimulationService:
             "total_delay": ev.total_delay_at_signals,
             "intersections_cleared": ev.intersections_cleared,
             "intersections_waited": ev.intersections_waited,
-            "progress_pct": compute_ev_progress(ev, state.corridor),
-            "eta_s": compute_ev_eta(ev, state.corridor, self._get_sim(run_id).sim_time),
+            "progress_pct": compute_ev_progress(ev, state.ev_corridor or state.corridor),
+            "eta_s": compute_ev_eta(ev, state.ev_corridor or state.corridor, self._get_sim(run_id).sim_time),
             "waiting_at": ev.waiting_at_intersection,
         }
 
@@ -207,7 +228,13 @@ class SimulationService:
             return []
         if not hasattr(state.controller, 'decision_history'):
             return []
-        return [d.to_dict() for d in state.controller.decision_history]
+        results = []
+        for i, d in enumerate(state.controller.decision_history):
+            d_dict = d.to_dict()
+            d_dict["decision_id"] = f"mcts_{i}"
+            d_dict.setdefault("sim_time", 0)
+            results.append(d_dict)
+        return results
 
     def list_runs(self) -> list[dict]:
         runs = []
