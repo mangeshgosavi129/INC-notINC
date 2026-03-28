@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+collected 96 items
+
+All 96 tests PASSED
+
+Tests include:
+- test_api_endpoints (14 tests): simulation lifecycle, config, admin, driver, analytics endpoints
+- test_comparison_integration (2 tests): MCTS vs baseline comparison, including EV delay
+- test_ev_movement (8 tests): EV dispatch, corridor traversal, arrival
+- test_fixed_time (6 tests): fixed-time controller phase transitions
+- test_mcts (10 tests): MCTS search, rollout, action application
+- test_queue_model (8 tests): queue dynamics, spillback, saturation
+- test_reward (7 tests): reward function, weight sensitivity, EV penalty
+- test_signal_fsm (12 tests): signal state machine transitions
+- test_simulation_engine (29 tests): engine init, stepping, event handling
+
+Key results:
+- test_mcts_outperforms_baseline_on_ev_delay: PASSED (MCTS achieves lower EV delay than fixed-time)
+- test_arrival_comparison_endpoint: PASSED (post-arrival baseline comparison works)
+- test_list_intersections: PASSED (20 intersections in the mesh network)
+
+============================== 96 passed in 266.34s ============================

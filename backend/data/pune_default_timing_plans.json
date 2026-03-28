@@ -1,0 +1,128 @@
+{
+  "_meta": {
+    "description": "Sample fixed-time timing plans for Pune corridor — NOT authoritative city data",
+    "note": "All values are configurable placeholders."
+  },
+  "timing_plans": [
+    {
+      "plan_id": "TP_INT01",
+      "intersection_id": "INT_01",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 0
+    },
+    {
+      "plan_id": "TP_INT02",
+      "intersection_id": "INT_02",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 12
+    },
+    {
+      "plan_id": "TP_INT03",
+      "intersection_id": "INT_03",
+      "phase_splits": {"1": 35, "2": 25},
+      "offset_s": 25
+    },
+    {
+      "plan_id": "TP_INT04",
+      "intersection_id": "INT_04",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 35
+    },
+    {
+      "plan_id": "TP_INT05",
+      "intersection_id": "INT_05",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 48
+    },
+    {
+      "plan_id": "TP_INT06",
+      "intersection_id": "INT_06",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 0
+    },
+    {
+      "plan_id": "TP_INT07",
+      "intersection_id": "INT_07",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 12
+    },
+    {
+      "plan_id": "TP_INT08",
+      "intersection_id": "INT_08",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 25
+    },
+    {
+      "plan_id": "TP_INT09",
+      "intersection_id": "INT_09",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 35
+    },
+    {
+      "plan_id": "TP_INT10",
+      "intersection_id": "INT_10",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 48
+    },
+    {
+      "plan_id": "TP_INT11",
+      "intersection_id": "INT_11",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 0
+    },
+    {
+      "plan_id": "TP_INT12",
+      "intersection_id": "INT_12",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 12
+    },
+    {
+      "plan_id": "TP_INT13",
+      "intersection_id": "INT_13",
+      "phase_splits": {"1": 35, "2": 25},
+      "offset_s": 25
+    },
+    {
+      "plan_id": "TP_INT14",
+      "intersection_id": "INT_14",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 35
+    },
+    {
+      "plan_id": "TP_INT15",
+      "intersection_id": "INT_15",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 48
+    },
+    {
+      "plan_id": "TP_INT16",
+      "intersection_id": "INT_16",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 0
+    },
+    {
+      "plan_id": "TP_INT17",
+      "intersection_id": "INT_17",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 12
+    },
+    {
+      "plan_id": "TP_INT18",
+      "intersection_id": "INT_18",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 25
+    },
+    {
+      "plan_id": "TP_INT19",
+      "intersection_id": "INT_19",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 35
+    },
+    {
+      "plan_id": "TP_INT20",
+      "intersection_id": "INT_20",
+      "phase_splits": {"1": 30, "2": 25},
+      "offset_s": 48
+    }
+  ]
+}

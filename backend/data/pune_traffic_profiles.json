@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "description": "Sample time-of-day traffic profiles for Pune-like traffic",
+    "note": "Rates are total approach arrival rate in vehicles per hour. Configurable."
+  },
+  "profiles": {
+    "default": [
+      {"time": "06:00", "rate_vph": 400},
+      {"time": "08:00", "rate_vph": 1600},
+      {"time": "10:00", "rate_vph": 1200},
+      {"time": "13:00", "rate_vph": 1000},
+      {"time": "17:00", "rate_vph": 1800},
+      {"time": "19:00", "rate_vph": 1400},
+      {"time": "22:00", "rate_vph": 600},
+      {"time": "00:00", "rate_vph": 200}
+    ],
+    "weekend": [
+      {"time": "06:00", "rate_vph": 200},
+      {"time": "09:00", "rate_vph": 800},
+      {"time": "12:00", "rate_vph": 1200},
+      {"time": "15:00", "rate_vph": 1000},
+      {"time": "18:00", "rate_vph": 1400},
+      {"time": "21:00", "rate_vph": 800},
+      {"time": "00:00", "rate_vph": 200}
+    ]
+  }
+}
