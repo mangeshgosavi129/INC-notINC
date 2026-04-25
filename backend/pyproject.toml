@@ -1,7 +1,7 @@
 [project]
 name = "corridor-clearing"
 version = "0.1.0"
-description = "Dynamic Corridor Clearing for Pune Traffic — RH-MCTS"
+description = "Dynamic Corridor Clearing for Pune Traffic"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.104.0",

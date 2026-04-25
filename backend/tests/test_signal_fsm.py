@@ -153,7 +153,7 @@ class TestPreemption:
         signal_fsm.handle_min_green_expire(10.0)
 
         # Request phase 2 directly (EV preemption)
-        events = signal_fsm.request_phase_change(2, 12.0, source="mcts")
+        events = signal_fsm.request_phase_change(2, 12.0, source="agent")
         assert signal_fsm.state.current_state == SignalPhaseState.AMBER
 
         # Complete transition

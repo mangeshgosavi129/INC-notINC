@@ -72,7 +72,7 @@ class EventRepo:
         return [dict(r) for r in await cursor.fetchall()]
 
 
-class MCTSDecisionRepo:
+class AgentDecisionRepo:
     def __init__(self, conn: aiosqlite.Connection):
         self.conn = conn
 
@@ -82,7 +82,7 @@ class MCTSDecisionRepo:
                      computation_ms: float | None = None,
                      exploration_constant: float | None = None) -> None:
         await self.conn.execute(
-            "INSERT INTO mcts_decisions (decision_id, run_id, sim_time, corridor_id, "
+            "INSERT INTO agent_decisions (decision_id, run_id, sim_time, corridor_id, "
             "state_snapshot_json, actions_json, reward, iterations, tree_depth, "
             "computation_ms, exploration_constant) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (decision_id, run_id, sim_time, corridor_id,
@@ -92,7 +92,7 @@ class MCTSDecisionRepo:
 
     async def get_by_run(self, run_id: str, limit: int = 200) -> list[dict]:
         cursor = await self.conn.execute(
-            "SELECT * FROM mcts_decisions WHERE run_id = ? ORDER BY sim_time LIMIT ?",
+            "SELECT * FROM agent_decisions WHERE run_id = ? ORDER BY sim_time LIMIT ?",
             (run_id, limit),
         )
         return [dict(r) for r in await cursor.fetchall()]
@@ -181,12 +181,12 @@ class ComparisonRepo:
     def __init__(self, conn: aiosqlite.Connection):
         self.conn = conn
 
-    async def create(self, pair_id: str, mcts_run_id: str, baseline_run_id: str,
+    async def create(self, pair_id: str, agent_run_id: str, baseline_run_id: str,
                      config_hash: str) -> None:
         await self.conn.execute(
-            "INSERT INTO comparison_pairs (pair_id, mcts_run_id, baseline_run_id, config_hash, created_at) "
+            "INSERT INTO comparison_pairs (pair_id, agent_run_id, baseline_run_id, config_hash, created_at) "
             "VALUES (?, ?, ?, ?, ?)",
-            (pair_id, mcts_run_id, baseline_run_id, config_hash,
+            (pair_id, agent_run_id, baseline_run_id, config_hash,
              datetime.now(timezone.utc).isoformat()),
         )
         await self.conn.commit()

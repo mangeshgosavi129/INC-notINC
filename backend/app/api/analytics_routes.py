@@ -38,9 +38,9 @@ async def ev_waterfall(run_id: str):
 
 
 @router.get("/compare-baseline")
-async def compare_baseline(mcts_run_id: str, baseline_run_id: str):
+async def compare_baseline(agent_run_id: str, baseline_run_id: str):
     try:
-        return analytics_service.compare_runs(mcts_run_id, baseline_run_id)
+        return analytics_service.compare_runs(agent_run_id, baseline_run_id)
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -65,8 +65,8 @@ async def export_csv(run_id: str):
 
 
 @router.get("/comparison-report")
-async def comparison_report(mcts_run_id: str, baseline_run_id: str):
+async def comparison_report(agent_run_id: str, baseline_run_id: str):
     try:
-        return export_service.export_comparison_report(mcts_run_id, baseline_run_id)
+        return export_service.export_comparison_report(agent_run_id, baseline_run_id)
     except Exception as e:
         raise HTTPException(400, str(e))

@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Dynamic Corridor Clearing — RH-MCTS",
+    title="Dynamic Corridor Clearing",
     description="Pune Traffic Emergency Vehicle Corridor Clearing System",
     version="0.1.0",
     lifespan=lifespan,

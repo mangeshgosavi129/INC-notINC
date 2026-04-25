@@ -13,8 +13,8 @@ class StateUpdateMessage(WSMessage):
     type: str = "state_update"
 
 
-class MCTSDecisionMessage(WSMessage):
-    type: str = "mcts_decision"
+class AgentDecisionMessage(WSMessage):
+    type: str = "agent_decision"
 
 
 class EVStatusChangeMessage(WSMessage):

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS simulation_events (
 CREATE INDEX IF NOT EXISTS idx_events_run_time ON simulation_events(run_id, sim_time);
 CREATE INDEX IF NOT EXISTS idx_events_type ON simulation_events(run_id, event_type);
 
-CREATE TABLE IF NOT EXISTS mcts_decisions (
+CREATE TABLE IF NOT EXISTS agent_decisions (
     decision_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL REFERENCES simulation_runs(run_id),
     sim_time REAL NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS mcts_decisions (
     exploration_constant REAL
 );
 
-CREATE INDEX IF NOT EXISTS idx_mcts_run_time ON mcts_decisions(run_id, sim_time);
+CREATE INDEX IF NOT EXISTS idx_agent_run_time ON agent_decisions(run_id, sim_time);
 
 CREATE TABLE IF NOT EXISTS ev_journeys (
     journey_id TEXT PRIMARY KEY,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS configs (
 
 CREATE TABLE IF NOT EXISTS comparison_pairs (
     pair_id TEXT PRIMARY KEY,
-    mcts_run_id TEXT NOT NULL REFERENCES simulation_runs(run_id),
+    agent_run_id TEXT NOT NULL REFERENCES simulation_runs(run_id),
     baseline_run_id TEXT NOT NULL REFERENCES simulation_runs(run_id),
     config_hash TEXT NOT NULL,
     created_at TEXT NOT NULL

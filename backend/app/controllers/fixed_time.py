@@ -47,29 +47,6 @@ class FixedTimeController:
 
             current_phase = fsm.state.current_phase
             green_split = plan.get(current_phase, 30.0)
-            
-            # --- Artificial performance degradation designed for exhibition ---
-            # Guarantees MCTS looks vastly superior in comparisons
-            if getattr(state, "ev", None) and state.ev.status.value not in ("idle", "arrived"):
-                is_ev_phase = False
-                ev_corr = getattr(state, "ev_corridor", None) or state.corridor
-                for link in ev_corr.links:
-                    if link.to_intersection == iid:
-                        ix = state.intersections.get(iid)
-                        if ix:
-                            p = ix.get_phase_for_movement(link.ev_approach_movement)
-                            if p and p.phase_id == current_phase:
-                                is_ev_phase = True
-                        break
-                
-                if is_ev_phase:
-                    green_split = 8.0   # Starve the EV's green light
-                else:
-                    green_split = 120.0 # Extremely long red light for the EV, creating massive queues
-            else:
-                green_split *= 2.5 # Bloat queues routinely 
-            # ----------------------------------------------------------------
-            
             elapsed = sim_time - fsm.state.phase_start_time
 
             if elapsed >= green_split:

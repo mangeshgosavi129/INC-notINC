@@ -2,7 +2,7 @@ import type {
   SimulationInitParams,
   SimulationState,
   MetricsSnapshot,
-  MCTSDecision,
+  AgentDecision,
   ComparisonResult,
   Alert,
   IntersectionConfig,
@@ -73,9 +73,9 @@ export const dispatchEV = (runId: string, params?: {
 export const getEVStatus = (runId: string) =>
   request<Record<string, any>>(`/api/ev/status/${runId}`);
 
-// ── MCTS Control ──
+// ── Dynamic control ──
 export const getDecisionLog = (runId: string) =>
-  request<MCTSDecision[]>(`/api/control/decision-log/${runId}`);
+  request<AgentDecision[]>(`/api/control/decision-log/${runId}`);
 
 export const explainLastDecision = (runId: string) =>
   request<{ decision: Record<string, any>; explanation: string }>(`/api/control/explain-last-decision/${runId}`);
@@ -86,8 +86,8 @@ export const forceDecision = (runId: string) =>
 export const setBaseline = (runId: string) =>
   post<Record<string, any>>(`/api/control/set-baseline/${runId}`);
 
-export const setMCTS = (runId: string) =>
-  post<Record<string, any>>(`/api/control/set-mcts/${runId}`);
+export const setAgent = (runId: string) =>
+  post<Record<string, any>>(`/api/control/set-agent/${runId}`);
 
 // ── Config ──
 export const getConfig = () =>
@@ -139,8 +139,8 @@ export const getThroughputHistory = (runId: string) =>
 export const getEVJourney = (runId: string) =>
   request<Record<string, any>>(`/api/analytics/ev-journey/${runId}`);
 
-export const compareBaseline = (mctsRunId: string, baselineRunId: string) =>
-  request<ComparisonResult>(`/api/analytics/compare-baseline?mcts_run_id=${mctsRunId}&baseline_run_id=${baselineRunId}`);
+export const compareBaseline = (agentRunId: string, baselineRunId: string) =>
+  request<ComparisonResult>(`/api/analytics/compare-baseline?agent_run_id=${agentRunId}&baseline_run_id=${baselineRunId}`);
 
 export const getPlotsData = (runId: string) =>
   request<Record<string, any>>(`/api/analytics/plots/${runId}`);

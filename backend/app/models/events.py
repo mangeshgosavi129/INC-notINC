@@ -23,8 +23,8 @@ class EventType(str, Enum):
     EV_ENTER_INTERSECTION = "ev_enter_intersection"
     EV_REACH_DESTINATION = "ev_reach_destination"
 
-    # MCTS events
-    MCTS_REPLAN_TRIGGER = "mcts_replan_trigger"
+    # Dynamic controller events
+    AGENT_REPLAN_TRIGGER = "agent_replan_trigger"
 
     # Monitoring events
     CONGESTION_SNAPSHOT = "congestion_snapshot"
@@ -41,7 +41,7 @@ class SimEvent(BaseModel):
     event_type: EventType
     scheduled_time: float
     payload: dict
-    source: str = "simulation"  # "simulation", "mcts", "user", "baseline"
+    source: str = "simulation"  # "simulation", "agent", "user", "baseline"
 
     def __lt__(self, other: "SimEvent") -> bool:
         return self.scheduled_time < other.scheduled_time

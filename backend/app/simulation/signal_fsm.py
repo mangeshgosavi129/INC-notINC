@@ -101,7 +101,7 @@ class SignalFSM:
         return self._begin_termination(sim_time)
 
     def request_phase_change(self, target_phase: int, sim_time: float,
-                             source: str = "mcts") -> list[SimEvent]:
+                             source: str = "agent") -> list[SimEvent]:
         """Request a phase change. Respects all realism constraints.
 
         Returns events needed for the transition. The caller should schedule them.
@@ -128,7 +128,7 @@ class SignalFSM:
         return self._begin_termination(sim_time)
 
     def request_terminate(self, sim_time: float,
-                          source: str = "mcts") -> list[SimEvent]:
+                          source: str = "agent") -> list[SimEvent]:
         """Request termination of current phase (advance to next in ring)."""
         next_phase = self.intersection.get_next_phase(self.state.current_phase)
         return self.request_phase_change(next_phase, sim_time, source)
@@ -138,7 +138,7 @@ class SignalFSM:
         if self.state.current_state != SignalPhaseState.GREEN:
             return []
         # We just let the max_green event handle termination naturally.
-        # The MCTS action "EXTEND" means: keep HOLD for now, don't terminate.
+        # Extend means keep holding for now without terminating.
         # So this is effectively a no-op that signals intent.
         return []
 

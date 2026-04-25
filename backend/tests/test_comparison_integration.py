@@ -1,4 +1,4 @@
-"""Integration test: MCTS vs baseline comparison."""
+"""Integration test: agent-placeholder vs fixed-time comparison."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,8 +12,8 @@ def client():
 
 
 class TestComparisonIntegration:
-    def test_mcts_outperforms_baseline_on_ev_delay(self, client):
-        """Run both controllers with same config, verify MCTS has lower EV delay."""
+    def test_agent_comparison_returns_metrics(self, client):
+        """Run both controllers with same config and verify comparison payload."""
         seed = 42
         params = {
             "duration_s": 200,
@@ -22,20 +22,20 @@ class TestComparisonIntegration:
             "start_time_of_day": "08:00",
         }
 
-        # Init and run MCTS
+        # Init and run agent placeholder
         res = client.post("/api/simulation/init", json={
-            **params, "controller_type": "mcts", "name": "MCTS Integration"
+            **params, "controller_type": "agent", "name": "Agent Integration"
         })
         assert res.status_code == 200
-        mcts_id = res.json()["run_id"]
+        agent_id = res.json()["run_id"]
 
         # Dispatch EV before running
-        res = client.post(f"/api/ev/dispatch/{mcts_id}", json={
+        res = client.post(f"/api/ev/dispatch/{agent_id}", json={
             "ev_id": "AMB_01", "vehicle_type": "ambulance"
         })
         assert res.status_code == 200
 
-        res = client.post(f"/api/simulation/run/{mcts_id}")
+        res = client.post(f"/api/simulation/run/{agent_id}")
         assert res.status_code == 200
 
         # Init and run baseline
@@ -55,25 +55,19 @@ class TestComparisonIntegration:
 
         # Compare
         res = client.get(
-            f"/api/analytics/compare-baseline?mcts_run_id={mcts_id}&baseline_run_id={base_id}"
+            f"/api/analytics/compare-baseline?agent_run_id={agent_id}&baseline_run_id={base_id}"
         )
         assert res.status_code == 200
         comp = res.json()
 
-        assert "mcts_ev_delay" in comp
+        assert "agent_ev_delay" in comp
         assert "baseline_ev_delay" in comp
         assert "ev_delay_improvement_pct" in comp
-
-        # MCTS should achieve lower or equal EV delay
-        assert comp["mcts_ev_delay"] <= comp["baseline_ev_delay"], (
-            f"MCTS delay {comp['mcts_ev_delay']}s should be <= "
-            f"baseline delay {comp['baseline_ev_delay']}s"
-        )
 
     def test_metrics_populated_after_run(self, client):
         """Verify metrics are captured during simulation run."""
         res = client.post("/api/simulation/init", json={
-            "duration_s": 120, "controller_type": "mcts", "name": "Metrics Test"
+            "duration_s": 120, "controller_type": "agent", "name": "Metrics Test"
         })
         run_id = res.json()["run_id"]
         client.post(f"/api/simulation/run/{run_id}")
@@ -87,7 +81,7 @@ class TestComparisonIntegration:
     def test_ev_waterfall_endpoint(self, client):
         """Verify EV waterfall analytics endpoint works."""
         res = client.post("/api/simulation/init", json={
-            "duration_s": 200, "controller_type": "mcts"
+            "duration_s": 200, "controller_type": "agent"
         })
         run_id = res.json()["run_id"]
         client.post(f"/api/ev/dispatch/{run_id}")

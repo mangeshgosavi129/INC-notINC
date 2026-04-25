@@ -52,7 +52,7 @@ export const BaselineComparison: React.FC<Props> = ({ simId }) => {
           </span>
         </div>
         <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 8, fontFamily: theme.fontMono }}>
-          MCTS Delay: {data.mcts_ev_delay.toFixed(1)}s <br/>
+          Agent Delay: {data.agent_ev_delay.toFixed(1)}s <br/>
           Baseline: {data.baseline_ev_delay.toFixed(1)}s
         </div>
       </div>

@@ -88,7 +88,7 @@ export default function App() {
 
               <div style={{ flex: 1 }} />
               <div style={{ padding: '12px 16px', fontSize: 10, color: theme.textMuted }}>
-                Dynamic Corridor Clearing<br />RH-MCTS v0.1
+                Dynamic Corridor Clearing<br />Agent v0.1
               </div>
             </nav>
 

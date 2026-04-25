@@ -73,8 +73,8 @@ function ConnectScreen({ onConnect }: { onConnect: (simId: string) => void }) {
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span style={{
                   fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                  background: run.controller_type === 'mcts' ? theme.accent + '20' : theme.border,
-                  color: run.controller_type === 'mcts' ? theme.accent : theme.textSecondary,
+                  background: run.controller_type === 'agent' ? theme.accent + '20' : theme.border,
+                  color: run.controller_type === 'agent' ? theme.accent : theme.textSecondary,
                 }}>
                   {run.controller_type.toUpperCase()}
                 </span>

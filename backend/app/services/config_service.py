@@ -18,7 +18,7 @@ class ConfigService:
         self._corridor: Corridor | None = None
         self._profile: TrafficProfile | None = None
         self._timing_plans: list[dict] | None = None
-        self._mcts_config: dict | None = None
+        self._agent_config: dict | None = None
         self._simulation_config: dict | None = None
 
     def load_defaults(self) -> None:
@@ -26,7 +26,7 @@ class ConfigService:
         self._corridor = self._load_corridor()
         self._profile = self._load_profile()
         self._timing_plans = self._load_timing_plans()
-        self._mcts_config = self._load_mcts_config()
+        self._agent_config = self._load_agent_config()
         self._simulation_config = self._load_simulation_config()
 
     @property
@@ -54,10 +54,10 @@ class ConfigService:
         return self._timing_plans
 
     @property
-    def mcts_config(self) -> dict:
-        if self._mcts_config is None:
-            self._mcts_config = self._load_mcts_config()
-        return self._mcts_config
+    def agent_config(self) -> dict:
+        if self._agent_config is None:
+            self._agent_config = self._load_agent_config()
+        return self._agent_config
 
     @property
     def simulation_config(self) -> dict:
@@ -85,8 +85,8 @@ class ConfigService:
             data = json.load(f)
         return data["timing_plans"]
 
-    def _load_mcts_config(self) -> dict:
-        with open(self.data_dir / "mcts_default_config.json") as f:
+    def _load_agent_config(self) -> dict:
+        with open(self.data_dir / "agent_default_config.json") as f:
             return json.load(f)
 
     def _load_simulation_config(self) -> dict:
@@ -104,9 +104,9 @@ class ConfigService:
         self._corridor = Corridor(**data["corridor"])
         return self._corridor
 
-    def update_mcts_config(self, data: dict) -> dict:
-        self._mcts_config = data
-        return self._mcts_config
+    def update_agent_config(self, data: dict) -> dict:
+        self._agent_config = data
+        return self._agent_config
 
     def update_simulation_config(self, data: dict) -> dict:
         self._simulation_config = data
@@ -117,7 +117,7 @@ class ConfigService:
             "intersections": [ix.model_dump() for ix in self.intersections],
             "corridor": self.corridor.model_dump(),
             "timing_plans": self.timing_plans,
-            "mcts": self.mcts_config,
+            "agent": self.agent_config,
             "simulation": self.simulation_config,
         }
 
@@ -126,7 +126,7 @@ class ConfigService:
         self._corridor = None
         self._profile = None
         self._timing_plans = None
-        self._mcts_config = None
+        self._agent_config = None
         self._simulation_config = None
 
 

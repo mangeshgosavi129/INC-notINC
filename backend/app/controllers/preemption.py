@@ -1,10 +1,7 @@
 """Emergency preemption logic.
 
-When an EV enters the corridor, preemption modifies MCTS behavior:
-1. W_EV weight activated in reward function
-2. Replan interval shortened (10s → 5s)
-3. Rollout policy biases toward EV-clearing
-4. Can also do direct preemption for nearest intersection
+When an EV enters the corridor, preemption can request a green phase for the
+next intersection while respecting amber/all-red constraints via SignalFSM.
 """
 
 from __future__ import annotations
@@ -21,8 +18,8 @@ if TYPE_CHECKING:
 def preempt_for_ev(state: SimulationState, sim_time: float) -> list[SimEvent]:
     """Direct preemption: switch the next intersection to EV's approach phase.
 
-    This is used as an immediate fallback when MCTS hasn't had time to
-    replan. MCTS will take over at the next replan cycle.
+    This is used as an immediate fallback while the dynamic controller is a
+    placeholder.
     """
     events: list[SimEvent] = []
 

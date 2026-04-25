@@ -57,30 +57,30 @@ export interface EVStatusFull {
   waiting_at: string | null;
 }
 
-export interface MCTSDecision {
+export interface AgentDecision {
   decision_id: string;
   sim_time: number;
   actions: Record<string, { action_type: string; target_phase?: number }>;
-  reward: number;
-  iterations: number;
+  status: string;
+  message: string;
   computation_ms: number;
 }
 
 export interface WSMessage {
-  type: 'state_update' | 'mcts_decision' | 'ev_status_change' | 'metrics_snapshot' | 'signal_phase_change' | 'alert' | 'ack' | 'error';
+  type: 'state_update' | 'agent_decision' | 'ev_status_change' | 'metrics_snapshot' | 'signal_phase_change' | 'alert' | 'ack' | 'error';
   data: Record<string, any>;
   sim_time?: number;
 }
 
 export interface ComparisonResult {
   pair_id: string;
-  mcts_ev_delay: number;
+  agent_ev_delay: number;
   baseline_ev_delay: number;
   ev_delay_improvement_pct: number;
-  mcts_avg_queue: number;
+  agent_avg_queue: number;
   baseline_avg_queue: number;
   queue_improvement_pct: number;
-  mcts_throughput: number;
+  agent_throughput: number;
   baseline_throughput: number;
   throughput_improvement_pct: number;
 }
@@ -88,7 +88,7 @@ export interface ComparisonResult {
 export interface SimulationInitParams {
   name?: string;
   corridor_id?: string;
-  controller_type?: 'mcts' | 'fixed_time';
+  controller_type?: 'agent' | 'fixed_time';
   duration_s?: number;
   sim_speed?: number;
   random_seed?: number;

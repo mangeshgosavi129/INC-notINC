@@ -11,7 +11,7 @@ class SignalPhaseState(str, Enum):
 
 class SignalControllerState(BaseModel):
     intersection_id: str
-    mode: str = "FIXED_TIME"  # "FIXED_TIME", "MCTS", "PREEMPTION"
+    mode: str = "FIXED_TIME"  # "FIXED_TIME", "AGENT", "PREEMPTION"
     current_phase: int = 1
     current_state: SignalPhaseState = SignalPhaseState.GREEN
     phase_start_time: float = 0.0

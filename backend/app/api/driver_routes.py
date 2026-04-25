@@ -223,8 +223,8 @@ async def arrival_comparison(run_id: str):
     start_ix = ev.route[0] if ev.route else None
     end_ix = ev.route[-1] if ev.route else None
     
-    current_ctrl = config.get("controller_type", "mcts")
-    baseline_ctrl = "fixed_time" if current_ctrl == "mcts" else "mcts"
+    current_ctrl = config.get("controller_type", "agent")
+    baseline_ctrl = "fixed_time" if current_ctrl == "agent" else "agent"
     
     base_id = simulation_service.init_simulation(
         name=f"Comparison for {config.get('name', run_id)}",
@@ -249,11 +249,9 @@ async def arrival_comparison(run_id: str):
     )
     
     simulation_service.start_sync(base_id)
-    if current_ctrl == "mcts":
+    if current_ctrl == "agent":
         comparison = analytics_service.compare_runs(run_id, base_id)
     else:
-        # If running fixed time, we compare MCTS against the current!
-        # compare_runs(mcts_run_id, baseline_run_id)
         comparison = analytics_service.compare_runs(base_id, run_id)
     simulation_service.reset(base_id)
     

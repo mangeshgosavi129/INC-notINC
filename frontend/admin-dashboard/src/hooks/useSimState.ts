@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { SimulationState, MetricsSnapshot, MCTSDecision, Alert, WSMessage } from '../types';
+import type { SimulationState, MetricsSnapshot, AgentDecision, Alert, WSMessage } from '../types';
 import { useAdminWebSocket } from './useAdminWebSocket';
 import { getState, getMetrics, getDecisionLog } from '../api/client';
 
 interface SimStateHook {
   state: SimulationState | null;
   metricsHistory: MetricsSnapshot[];
-  decisions: MCTSDecision[];
+  decisions: AgentDecision[];
   alerts: Alert[];
   isConnected: boolean;
 }
@@ -14,7 +14,7 @@ interface SimStateHook {
 export function useSimState(runId: string | null): SimStateHook {
   const [state, setState] = useState<SimulationState | null>(null);
   const [metricsHistory, setMetricsHistory] = useState<MetricsSnapshot[]>([]);
-  const [decisions, setDecisions] = useState<MCTSDecision[]>([]);
+  const [decisions, setDecisions] = useState<AgentDecision[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -46,9 +46,9 @@ export function useSimState(runId: string | null): SimStateHook {
           setMetricsHistory((prev) => [...prev.slice(-199), msg.data as MetricsSnapshot]);
         }
         break;
-      case 'mcts_decision':
+      case 'agent_decision':
         if (msg.data) {
-          setDecisions((prev) => [...prev, msg.data as MCTSDecision]);
+          setDecisions((prev) => [...prev, msg.data as AgentDecision]);
         }
         break;
       case 'alert':

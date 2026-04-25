@@ -93,35 +93,35 @@ class AnalyticsService:
             "status": ev.status.value,
         }
 
-    def compare_runs(self, mcts_run_id: str, baseline_run_id: str) -> dict:
-        mcts_metrics = simulation_service.get_metrics(mcts_run_id)
+    def compare_runs(self, agent_run_id: str, baseline_run_id: str) -> dict:
+        agent_metrics = simulation_service.get_metrics(agent_run_id)
         base_metrics = simulation_service.get_metrics(baseline_run_id)
-        mcts_ev = self.get_ev_journey_summary(mcts_run_id)
+        agent_ev = self.get_ev_journey_summary(agent_run_id)
         base_ev = self.get_ev_journey_summary(baseline_run_id)
 
-        mcts_avg_q = _avg_field(mcts_metrics, "total_queue_length")
+        agent_avg_q = _avg_field(agent_metrics, "total_queue_length")
         base_avg_q = _avg_field(base_metrics, "total_queue_length")
-        mcts_throughput = _last_field(mcts_metrics, "total_throughput")
+        agent_throughput = _last_field(agent_metrics, "total_throughput")
         base_throughput = _last_field(base_metrics, "total_throughput")
 
-        mcts_ev_delay = mcts_ev["total_signal_delay_s"] if mcts_ev else 0
+        agent_ev_delay = agent_ev["total_signal_delay_s"] if agent_ev else 0
         base_ev_delay = base_ev["total_signal_delay_s"] if base_ev else 0
 
         return {
-            "mcts_run_id": mcts_run_id,
+            "agent_run_id": agent_run_id,
             "baseline_run_id": baseline_run_id,
-            "mcts_ev_delay": mcts_ev_delay,
+            "agent_ev_delay": agent_ev_delay,
             "baseline_ev_delay": base_ev_delay,
-            "ev_delay_improvement_pct": _pct_improvement(base_ev_delay, mcts_ev_delay),
-            "mcts_avg_queue": round(mcts_avg_q, 2),
+            "ev_delay_improvement_pct": _pct_improvement(base_ev_delay, agent_ev_delay),
+            "agent_avg_queue": round(agent_avg_q, 2),
             "baseline_avg_queue": round(base_avg_q, 2),
-            "queue_improvement_pct": _pct_improvement(base_avg_q, mcts_avg_q),
-            "mcts_throughput": mcts_throughput,
+            "queue_improvement_pct": _pct_improvement(base_avg_q, agent_avg_q),
+            "agent_throughput": agent_throughput,
             "baseline_throughput": base_throughput,
             "throughput_improvement_pct": _pct_improvement(
-                base_throughput, mcts_throughput, higher_is_better=True
+                base_throughput, agent_throughput, higher_is_better=True
             ),
-            "mcts_journey": mcts_ev,
+            "agent_journey": agent_ev,
             "baseline_journey": base_ev,
         }
 

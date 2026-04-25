@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "name": "agent_default",
+    "description": "Placeholder configuration for future AI-agent route and signal orchestration."
+  },
+  "main_agent": {
+    "enabled": false,
+    "provider": null,
+    "model": null
+  },
+  "routing": {
+    "enabled": false
+  },
+  "signal_control": {
+    "enabled": false
+  }
+}

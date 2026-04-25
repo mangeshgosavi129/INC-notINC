@@ -20,8 +20,8 @@ async def load_config(req: ConfigLoadRequest):
             config_service.update_intersections(req.config_json)
         elif req.config_type == "corridor":
             config_service.update_corridor(req.config_json)
-        elif req.config_type == "mcts":
-            config_service.update_mcts_config(req.config_json)
+        elif req.config_type == "agent":
+            config_service.update_agent_config(req.config_json)
         elif req.config_type == "simulation":
             config_service.update_simulation_config(req.config_json)
         else:

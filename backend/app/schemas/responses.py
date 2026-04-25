@@ -40,24 +40,24 @@ class EVStatusResponse(BaseModel):
     eta_s: float | None = None
 
 
-class MCTSDecisionResponse(BaseModel):
+class AgentDecisionResponse(BaseModel):
     decision_id: str
     sim_time: float
     actions: dict
-    reward: float
-    iterations: int
+    status: str
+    message: str
     computation_ms: float
 
 
 class ComparisonResponse(BaseModel):
     pair_id: str
-    mcts_ev_delay: float
+    agent_ev_delay: float
     baseline_ev_delay: float
     ev_delay_improvement_pct: float
-    mcts_avg_queue: float
+    agent_avg_queue: float
     baseline_avg_queue: float
     queue_improvement_pct: float
-    mcts_throughput: int
+    agent_throughput: int
     baseline_throughput: int
     throughput_improvement_pct: float
 

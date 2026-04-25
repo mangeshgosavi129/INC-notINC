@@ -11,10 +11,10 @@ import type { SimRun, ComparisonResult, MetricsSnapshot } from '../types';
 
 export const ComparisonPage: React.FC = () => {
   const [runs, setRuns] = useState<SimRun[]>([]);
-  const [mctsRunId, setMctsRunId] = useState('');
+  const [agentRunId, setAgentRunId] = useState('');
   const [baselineRunId, setBaselineRunId] = useState('');
   const [comparison, setComparison] = useState<ComparisonResult | null>(null);
-  const [mctsMetrics, setMctsMetrics] = useState<MetricsSnapshot[]>([]);
+  const [agentMetrics, setAgentMetrics] = useState<MetricsSnapshot[]>([]);
   const [baselineMetrics, setBaselineMetrics] = useState<MetricsSnapshot[]>([]);
   const [loading, setLoading] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
@@ -26,17 +26,17 @@ export const ComparisonPage: React.FC = () => {
   }, []);
 
   const handleCompare = async () => {
-    if (!mctsRunId || !baselineRunId) return;
+    if (!agentRunId || !baselineRunId) return;
     setLoading(true);
     setError(null);
     try {
       const [comp, mMet, bMet] = await Promise.all([
-        compareBaseline(mctsRunId, baselineRunId),
-        getMetrics(mctsRunId),
+        compareBaseline(agentRunId, baselineRunId),
+        getMetrics(agentRunId),
         getMetrics(baselineRunId),
       ]);
       setComparison(comp);
-      setMctsMetrics(mMet);
+      setAgentMetrics(mMet);
       setBaselineMetrics(bMet);
     } catch (e: any) {
       setError(e.message);
@@ -47,16 +47,16 @@ export const ComparisonPage: React.FC = () => {
   const handleAutoRun = async () => {
     setLoading(true);
     setError(null);
-    setProgressMsg('Initializing MCTS...');
+    setProgressMsg('Initializing agent run...');
     setProgressPct(0);
     try {
       const seed = Math.floor(Math.random() * 10000);
       const params = { duration_s: 180, sim_speed: 10, random_seed: seed, start_time_of_day: '08:00' };
 
-      const mRes = await initSimulation({ ...params, controller_type: 'mcts', name: 'Auto MCTS' });
+      const mRes = await initSimulation({ ...params, controller_type: 'agent', name: 'Auto Agent' });
       await dispatchEV(mRes.run_id);
       
-      setProgressMsg('Running MCTS Simulation...');
+      setProgressMsg('Running agent simulation...');
       let mDone = false;
       const mProm = runSimulation(mRes.run_id).then(() => { mDone = true; });
       while (!mDone) {
@@ -89,7 +89,7 @@ export const ComparisonPage: React.FC = () => {
       setProgressMsg('Fetching Results...');
       setProgressPct(100);
 
-      setMctsRunId(mRes.run_id);
+      setAgentRunId(mRes.run_id);
       setBaselineRunId(bRes.run_id);
 
       const updatedRuns = await listSimulations();
@@ -101,7 +101,7 @@ export const ComparisonPage: React.FC = () => {
         getMetrics(bRes.run_id),
       ]);
       setComparison(comp);
-      setMctsMetrics(mMet);
+      setAgentMetrics(mMet);
       setBaselineMetrics(bMet);
       setProgressMsg('');
     } catch (e: any) {
@@ -112,30 +112,30 @@ export const ComparisonPage: React.FC = () => {
   };
 
   const barData = comparison ? [
-    { name: 'EV Delay (s)', MCTS: comparison.mcts_ev_delay, Baseline: comparison.baseline_ev_delay },
-    { name: 'Avg Queue', MCTS: comparison.mcts_avg_queue, Baseline: comparison.baseline_avg_queue },
-    { name: 'Throughput', MCTS: comparison.mcts_throughput, Baseline: comparison.baseline_throughput },
+    { name: 'EV Delay (s)', Agent: comparison.agent_ev_delay, Baseline: comparison.baseline_ev_delay },
+    { name: 'Avg Queue', Agent: comparison.agent_avg_queue, Baseline: comparison.baseline_avg_queue },
+    { name: 'Throughput', Agent: comparison.agent_throughput, Baseline: comparison.baseline_throughput },
   ] : [];
 
   // Merge queue histories for overlay
-  const overlayData = mctsMetrics.map((m, i) => ({
+  const overlayData = agentMetrics.map((m, i) => ({
     sim_time: m.sim_time,
-    mcts_queue: m.total_queue_length,
+    agent_queue: m.total_queue_length,
     baseline_queue: baselineMetrics[i]?.total_queue_length ?? 0,
   }));
 
   return (
     <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
       <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: theme.textPrimary }}>
-        MCTS vs Baseline Comparison
+        Agent vs Fixed-Time Comparison
       </h1>
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={mctsRunId} onChange={(e) => setMctsRunId(e.target.value)} style={selectStyle}>
-          <option value="">Select MCTS run...</option>
-          {runs.filter((r) => r.controller_type === 'mcts').map((r) => (
-            <option key={r.run_id} value={r.run_id}>{r.name || r.run_id.slice(0, 12)} (MCTS)</option>
+        <select value={agentRunId} onChange={(e) => setAgentRunId(e.target.value)} style={selectStyle}>
+          <option value="">Select agent run...</option>
+          {runs.filter((r) => r.controller_type === 'agent').map((r) => (
+            <option key={r.run_id} value={r.run_id}>{r.name || r.run_id.slice(0, 12)} (Agent)</option>
           ))}
         </select>
         <span style={{ color: theme.textMuted }}>vs</span>
@@ -145,7 +145,7 @@ export const ComparisonPage: React.FC = () => {
             <option key={r.run_id} value={r.run_id}>{r.name || r.run_id.slice(0, 12)} (Fixed)</option>
           ))}
         </select>
-        <button onClick={handleCompare} disabled={loading || !mctsRunId || !baselineRunId} style={btnStyle(theme.accent)}>
+        <button onClick={handleCompare} disabled={loading || !agentRunId || !baselineRunId} style={btnStyle(theme.accent)}>
           Compare
         </button>
         <button onClick={handleAutoRun} disabled={loading} style={btnStyle(theme.signalGreen)}>
@@ -207,7 +207,7 @@ export const ComparisonPage: React.FC = () => {
                 <YAxis stroke={theme.textMuted} fontSize={10} />
                 <Tooltip contentStyle={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 12 }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="MCTS" fill={theme.accent} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Agent" fill={theme.accent} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Baseline" fill={theme.textMuted} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -226,7 +226,7 @@ export const ComparisonPage: React.FC = () => {
                   <YAxis stroke={theme.textMuted} fontSize={10} />
                   <Tooltip contentStyle={{ background: theme.cardBg, border: `1px solid ${theme.border}`, borderRadius: 6, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="mcts_queue" name="MCTS Queue" stroke={theme.accent} dot={false} strokeWidth={2} />
+                  <Line type="monotone" dataKey="agent_queue" name="Agent Queue" stroke={theme.accent} dot={false} strokeWidth={2} />
                   <Line type="monotone" dataKey="baseline_queue" name="Baseline Queue" stroke={theme.textMuted} dot={false} strokeWidth={2} strokeDasharray="5 5" />
                 </LineChart>
               </ResponsiveContainer>

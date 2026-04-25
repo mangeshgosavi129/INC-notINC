@@ -95,7 +95,7 @@ async def control_room(run_id: str):
     try:
         state_data = simulation_service.get_state(run_id)
         ev_status = simulation_service.get_ev_status(run_id)
-        decisions = simulation_service.get_mcts_decisions(run_id)
+        decisions = simulation_service.get_agent_decisions(run_id)
 
         blockages = simulation_service._states.get(run_id)
         active_blockages = []

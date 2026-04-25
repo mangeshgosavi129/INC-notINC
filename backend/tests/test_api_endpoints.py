@@ -194,7 +194,7 @@ class TestDriverEndpoints:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert "ev_delay_improvement_pct" in data
-        assert "mcts_ev_delay" in data
+        assert "agent_ev_delay" in data
         assert "baseline_ev_delay" in data
 
 

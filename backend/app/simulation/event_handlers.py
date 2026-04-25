@@ -171,9 +171,9 @@ def handle_ev_reach_destination(state: SimulationState,
     return []
 
 
-def handle_mcts_replan_trigger(state: SimulationState,
-                               event: SimEvent) -> list[SimEvent]:
-    """Trigger MCTS to compute new signal plan."""
+def handle_agent_replan_trigger(state: SimulationState,
+                                event: SimEvent) -> list[SimEvent]:
+    """Trigger the dynamic controller to compute a new signal plan."""
     new_events: list[SimEvent] = []
 
     if state.controller is not None:
@@ -194,7 +194,7 @@ def handle_mcts_replan_trigger(state: SimulationState,
 
     new_events.append(SimEvent(
         event_id=gen_id("evt"),
-        event_type=EventType.MCTS_REPLAN_TRIGGER,
+        event_type=EventType.AGENT_REPLAN_TRIGGER,
         scheduled_time=event.scheduled_time + interval,
         payload={},
         source="simulation",
@@ -290,7 +290,7 @@ EVENT_HANDLERS: dict[EventType, callable] = {
     EventType.EV_ARRIVE_INTERSECTION: handle_ev_arrive_intersection,
     EventType.EV_ENTER_INTERSECTION: handle_ev_enter_intersection,
     EventType.EV_REACH_DESTINATION: handle_ev_reach_destination,
-    EventType.MCTS_REPLAN_TRIGGER: handle_mcts_replan_trigger,
+    EventType.AGENT_REPLAN_TRIGGER: handle_agent_replan_trigger,
     EventType.CONGESTION_SNAPSHOT: handle_congestion_snapshot,
     EventType.TRAFFIC_PROFILE_SHIFT: handle_traffic_profile_shift,
     EventType.BLOCKAGE_START: handle_blockage_start,

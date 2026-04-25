@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI tool: runs MCTS + baseline with same config, prints comparison table."""
+"""CLI tool: runs agent placeholder + fixed-time with same config."""
 
 import sys
 import time
@@ -37,18 +37,18 @@ def main():
     print(f"\nRunning comparison (seed={seed}, duration={duration}s)...")
     print("-" * 60)
 
-    # MCTS run
-    print("1. Initializing MCTS run...")
-    r = client.post("/api/simulation/init", json={**params, "controller_type": "mcts", "name": "MCTS Comparison"})
+    # Agent run
+    print("1. Initializing agent run...")
+    r = client.post("/api/simulation/init", json={**params, "controller_type": "agent", "name": "Agent Comparison"})
     r.raise_for_status()
-    mcts_id = r.json()["run_id"]
+    agent_id = r.json()["run_id"]
 
     print("   Dispatching EV...")
-    client.post(f"/api/ev/dispatch/{mcts_id}", json={"ev_id": "AMB_01"})
+    client.post(f"/api/ev/dispatch/{agent_id}", json={"ev_id": "AMB_01"})
 
     print("   Running to completion...")
     t0 = time.time()
-    client.post(f"/api/simulation/run/{mcts_id}")
+    client.post(f"/api/simulation/run/{agent_id}")
     print(f"   Done in {time.time() - t0:.1f}s")
 
     # Baseline run
@@ -67,22 +67,22 @@ def main():
 
     # Compare
     print("\n3. Comparing results...")
-    r = client.get(f"/api/analytics/compare-baseline?mcts_run_id={mcts_id}&baseline_run_id={base_id}")
+    r = client.get(f"/api/analytics/compare-baseline?agent_run_id={agent_id}&baseline_run_id={base_id}")
     r.raise_for_status()
     comp = r.json()
 
     print("\n" + "=" * 60)
     print("COMPARISON RESULTS")
     print("=" * 60)
-    print(f"{'Metric':<25} {'MCTS':>10} {'Baseline':>10} {'Improvement':>12}")
+    print(f"{'Metric':<25} {'Agent':>10} {'Baseline':>10} {'Improvement':>12}")
     print("-" * 60)
-    print(f"{'EV Delay (s)':<25} {comp['mcts_ev_delay']:>10.1f} {comp['baseline_ev_delay']:>10.1f} {comp['ev_delay_improvement_pct']:>+11.1f}%")
-    print(f"{'Avg Queue (veh)':<25} {comp['mcts_avg_queue']:>10.2f} {comp['baseline_avg_queue']:>10.2f} {comp['queue_improvement_pct']:>+11.1f}%")
-    print(f"{'Throughput (veh)':<25} {comp['mcts_throughput']:>10d} {comp['baseline_throughput']:>10d} {comp['throughput_improvement_pct']:>+11.1f}%")
+    print(f"{'EV Delay (s)':<25} {comp['agent_ev_delay']:>10.1f} {comp['baseline_ev_delay']:>10.1f} {comp['ev_delay_improvement_pct']:>+11.1f}%")
+    print(f"{'Avg Queue (veh)':<25} {comp['agent_avg_queue']:>10.2f} {comp['baseline_avg_queue']:>10.2f} {comp['queue_improvement_pct']:>+11.1f}%")
+    print(f"{'Throughput (veh)':<25} {comp['agent_throughput']:>10d} {comp['baseline_throughput']:>10d} {comp['throughput_improvement_pct']:>+11.1f}%")
     print("=" * 60)
 
     if comp["ev_delay_improvement_pct"] > 0:
-        print("\nMCTS outperformed baseline on EV delay reduction.")
+        print("\nAgent run had lower EV delay in this scenario.")
     else:
         print("\nBaseline had equal or lower EV delay (may vary by scenario).")
 

@@ -3,7 +3,7 @@ import { theme } from '@inc/shared-ui';
 import { getConfig, loadConfig, resetConfig } from '../api/client';
 import { NetworkEditor } from '../components/NetworkEditor';
 
-const tabs = ['network', 'intersections', 'corridor', 'mcts', 'simulation'] as const;
+const tabs = ['network', 'intersections', 'corridor', 'agent', 'simulation'] as const;
 type Tab = typeof tabs[number];
 
 export const ConfigPage: React.FC = () => {

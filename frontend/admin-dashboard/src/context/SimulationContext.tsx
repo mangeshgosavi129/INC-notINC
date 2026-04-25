@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useSimulation } from '../hooks/useSimulation';
 import { useSimState } from '../hooks/useSimState';
-import type { SimulationState, MetricsSnapshot, MCTSDecision, Alert } from '../types';
+import type { SimulationState, MetricsSnapshot, AgentDecision, Alert } from '../types';
 import type { SimStatus } from '../hooks/useSimulation';
 
 interface SimContextValue {
@@ -20,7 +20,7 @@ interface SimContextValue {
   // from useSimState
   state: SimulationState | null;
   metricsHistory: MetricsSnapshot[];
-  decisions: MCTSDecision[];
+  decisions: AgentDecision[];
   alerts: Alert[];
   isConnected: boolean;
 }

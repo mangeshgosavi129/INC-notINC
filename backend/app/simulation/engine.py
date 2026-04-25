@@ -26,7 +26,7 @@ from backend.app.utils.helpers import gen_id
 
 
 class Controller(Protocol):
-    """Protocol for signal controllers (MCTS or fixed-time)."""
+    """Protocol for signal controllers."""
     def decide(self, state: SimulationState, sim_time: float) -> list[SimEvent]: ...
 
 
@@ -231,11 +231,11 @@ class EventDrivenSimulator:
             source="simulation",
         ))
 
-        # MCTS replan trigger (if controller is set)
+        # Dynamic controller replan trigger (if controller is set)
         if self.state.controller is not None:
             self.schedule(SimEvent(
                 event_id=gen_id("evt"),
-                event_type=EventType.MCTS_REPLAN_TRIGGER,
+                event_type=EventType.AGENT_REPLAN_TRIGGER,
                 scheduled_time=self.state.replan_interval_s,
                 payload={},
                 source="simulation",

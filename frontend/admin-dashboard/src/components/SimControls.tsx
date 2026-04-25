@@ -21,7 +21,7 @@ export const SimControls: React.FC = () => {
   } = useSimContext();
 
   const [speed, setSpeed] = useState(5);
-  const [controllerType, setControllerType] = useState<'mcts' | 'fixed_time'>('mcts');
+  const [controllerType, setControllerType] = useState<'agent' | 'fixed_time'>('agent');
   const [evDispatched, setEvDispatched] = useState(false);
   const [intersectionConfigs, setIntersectionConfigs] = useState<IntersectionConfig[]>([]);
   const [startIntersection, setStartIntersection] = useState('');
@@ -90,11 +90,11 @@ export const SimControls: React.FC = () => {
       {simStatus === 'idle' && (
         <select
           value={controllerType}
-          onChange={(e) => setControllerType(e.target.value as 'mcts' | 'fixed_time')}
+          onChange={(e) => setControllerType(e.target.value as 'agent' | 'fixed_time')}
           style={selectStyle}
         >
-          <option value="mcts">MCTS (Adaptive)</option>
-          <option value="fixed_time">Fixed Time (Baseline)</option>
+          <option value="agent">Agent (Placeholder)</option>
+          <option value="fixed_time">Fixed Time</option>
         </select>
       )}
 
@@ -206,8 +206,8 @@ export const SimControls: React.FC = () => {
         {state?.controller_type && (
           <span style={{
             fontSize: 10, padding: '2px 8px', borderRadius: 4,
-            background: state.controller_type === 'mcts' ? theme.accent + '20' : theme.border,
-            color: state.controller_type === 'mcts' ? theme.accent : theme.textSecondary,
+            background: state.controller_type === 'agent' ? theme.accent + '20' : theme.border,
+            color: state.controller_type === 'agent' ? theme.accent : theme.textSecondary,
           }}>
             {state.controller_type.toUpperCase()}
           </span>

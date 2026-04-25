@@ -5,7 +5,7 @@ import { AlertBanner } from '../components/AlertBanner';
 import { VizSwitch } from '../components/VizSwitch';
 import { MetricsPanel } from '../components/MetricsPanel';
 import { EVTracker } from '../components/EVTracker';
-import { MCTSDecisionLog } from '../components/MCTSDecisionLog';
+import { AgentDecisionLog } from '../components/AgentDecisionLog';
 import { QueueChart } from '../components/QueueChart';
 import { EventPanel } from '../components/EventPanel';
 import { SignalIndicator } from '../components/SignalIndicator';
@@ -37,17 +37,17 @@ export const SimulationPage: React.FC = () => {
           </div>
           <div style={{ fontSize: 14, color: theme.textSecondary, textAlign: 'center', maxWidth: 500, lineHeight: 1.8 }}>
             Simulate traffic signal optimization for emergency vehicle corridor clearance
-            using Rolling Horizon Monte Carlo Tree Search.
+            using a placeholder AI-agent controller.
           </div>
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12,
             background: theme.cardBg, padding: 20, borderRadius: 12, border: `1px solid ${theme.border}`,
             fontSize: 13, color: theme.textSecondary, lineHeight: 1.8,
           }}>
-            <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>1.</span> Choose <b style={{ color: theme.textPrimary }}>MCTS</b> (adaptive) or <b style={{ color: theme.textPrimary }}>Fixed Time</b> (baseline) controller</div>
+            <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>1.</span> Choose <b style={{ color: theme.textPrimary }}>Agent</b> (placeholder) or <b style={{ color: theme.textPrimary }}>Fixed Time</b> controller</div>
             <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>2.</span> Click <b style={{ color: theme.signalGreen }}>Start Simulation</b> to begin</div>
             <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>3.</span> Click <b style={{ color: theme.accent }}>Dispatch Ambulance</b> to send an EV through the corridor</div>
-            <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>4.</span> Watch MCTS optimize signal timing to clear the path</div>
+            <div><span style={{ color: theme.signalGreen, fontWeight: 700 }}>4.</span> Watch placeholder agent decisions while routing is implemented</div>
           </div>
         </div>
       )}
@@ -93,7 +93,7 @@ export const SimulationPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Metrics + EV + MCTS + Events */}
+          {/* Right: Metrics + EV + Agent + Events */}
           <div style={{
             display: 'flex', flexDirection: 'column', gap: 8, padding: '16px 16px 16px 0',
             overflow: 'auto',
@@ -116,10 +116,10 @@ export const SimulationPage: React.FC = () => {
               display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: theme.textSecondary, padding: '10px 12px 4px' }}>
-                MCTS Decisions
+                Agent Decisions
               </div>
               <div style={{ flex: 1, overflow: 'auto' }}>
-                <MCTSDecisionLog decisions={decisions} />
+                <AgentDecisionLog decisions={decisions} />
               </div>
             </div>
 

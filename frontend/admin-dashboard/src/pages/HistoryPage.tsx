@@ -62,8 +62,8 @@ export const HistoryPage: React.FC = () => {
                 <td style={cellStyle}>
                   <span style={{
                     fontSize: 11, padding: '2px 8px', borderRadius: 4,
-                    background: run.controller_type === 'mcts' ? theme.accent + '20' : theme.border,
-                    color: run.controller_type === 'mcts' ? theme.accent : theme.textSecondary,
+                    background: run.controller_type === 'agent' ? theme.accent + '20' : theme.border,
+                    color: run.controller_type === 'agent' ? theme.accent : theme.textSecondary,
                   }}>
                     {run.controller_type.toUpperCase()}
                   </span>

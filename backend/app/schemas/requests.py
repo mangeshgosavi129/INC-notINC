@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class SimulationInitRequest(BaseModel):
     name: str = "Unnamed Run"
     corridor_id: str = "CORR_01"
-    controller_type: str = "mcts"  # "mcts" or "fixed_time"
+    controller_type: str = "agent"  # "agent" or "fixed_time"
     duration_s: float = 3600.0
     sim_speed: float = 1.0
     random_seed: int | None = None
@@ -39,15 +39,14 @@ class SignalOverrideRequest(BaseModel):
     reason: str = "manual"
 
 
-class MCTSParamsUpdate(BaseModel):
-    iterations: int | None = None
-    horizon_length_s: float | None = None
+class AgentParamsUpdate(BaseModel):
     replan_interval_s: float | None = None
-    exploration_constant: float | None = None
+    replan_interval_ev_s: float | None = None
+    config: dict | None = None
 
 
 class ConfigLoadRequest(BaseModel):
-    config_type: str  # "intersections", "corridor", "timing", "traffic_profiles", "mcts"
+    config_type: str  # "intersections", "corridor", "timing", "traffic_profiles", "agent"
     config_json: dict
 
 

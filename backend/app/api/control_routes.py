@@ -1,8 +1,7 @@
-"""Control routes — /api/control/* (MCTS)"""
+"""Control routes — /api/control/*."""
 
 from fastapi import APIRouter, HTTPException
 
-from backend.app.schemas.requests import MCTSParamsUpdate
 from backend.app.services.simulation_service import simulation_service
 
 router = APIRouter(prefix="/api/control", tags=["control"])
@@ -10,7 +9,7 @@ router = APIRouter(prefix="/api/control", tags=["control"])
 
 @router.post("/decide/{run_id}")
 async def force_decide(run_id: str):
-    """Force an MCTS decision at the current simulation time."""
+    """Force a dynamic-controller decision at the current simulation time."""
     try:
         state = simulation_service._states.get(run_id)
         sim = simulation_service._simulators.get(run_id)
@@ -43,31 +42,27 @@ async def set_baseline(run_id: str):
     return {"status": "ok", "controller": "fixed_time"}
 
 
-@router.post("/set-mcts/{run_id}")
-async def set_mcts(run_id: str):
-    """Switch to MCTS controller."""
+@router.post("/set-agent/{run_id}")
+async def set_agent(run_id: str):
+    """Switch to the AI-agent controller placeholder."""
     state = simulation_service._states.get(run_id)
     if state is None:
         raise HTTPException(404, "Simulation not found")
 
-    from backend.app.controllers.mcts_controller import MCTSController
+    from backend.app.controllers.agent_controller import AgentController
     from backend.app.services.config_service import config_service
-    state.controller = MCTSController.from_config(
-        list(state.intersections.values()),
-        state.corridor,
-        config_service.mcts_config,
-    )
-    return {"status": "ok", "controller": "mcts"}
+    state.controller = AgentController.from_config(config_service.agent_config)
+    return {"status": "ok", "controller": "agent"}
 
 
 @router.get("/decision-log/{run_id}")
 async def get_decision_log(run_id: str):
-    return simulation_service.get_mcts_decisions(run_id)
+    return simulation_service.get_agent_decisions(run_id)
 
 
 @router.get("/explain-last-decision/{run_id}")
 async def explain_last(run_id: str):
-    decisions = simulation_service.get_mcts_decisions(run_id)
+    decisions = simulation_service.get_agent_decisions(run_id)
     if not decisions:
         return {"message": "No decisions yet"}
     last = decisions[-1]
@@ -90,5 +85,6 @@ def _explain(decision: dict) -> str:
             parts.append(f"{iid}: preempt to EV phase {a.get('target_phase')}")
         elif at.startswith("EXTEND"):
             parts.append(f"{iid}: extend current green")
-    reward = decision.get("reward", 0)
-    return f"Reward={reward:.2f}. " + "; ".join(parts)
+    if not parts:
+        return decision.get("message", "AI agent routing is not implemented yet.")
+    return "; ".join(parts)

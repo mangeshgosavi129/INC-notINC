@@ -8,8 +8,8 @@ from typing import Any
 
 from backend.app.api.ws_manager import ws_manager
 from backend.app.config import settings
+from backend.app.controllers.agent_controller import AgentController
 from backend.app.controllers.fixed_time import FixedTimeController
-from backend.app.controllers.mcts_controller import MCTSController
 from backend.app.models.ev import EVStatus
 from backend.app.services.config_service import config_service
 from backend.app.simulation.engine import EventDrivenSimulator, SimulationState
@@ -27,7 +27,7 @@ class SimulationService:
 
     def init_simulation(self, name: str = "Unnamed Run",
                         corridor_id: str = "CORR_01",
-                        controller_type: str = "mcts",
+                        controller_type: str = "agent",
                         duration_s: float = 3600.0,
                         sim_speed: float = 1.0,
                         random_seed: int | None = None,
@@ -46,10 +46,8 @@ class SimulationService:
 
         # Build controller
         controller = None
-        if controller_type == "mcts":
-            controller = MCTSController.from_config(
-                intersections, corridor, config_service.mcts_config
-            )
+        if controller_type == "agent":
+            controller = AgentController.from_config(config_service.agent_config)
         elif controller_type == "fixed_time":
             controller = FixedTimeController.from_timing_plans_json(
                 config_service.timing_plans
@@ -63,8 +61,8 @@ class SimulationService:
             traffic_profile=profile,
             controller=controller,
             start_time_of_day_s=start_tod,
-            replan_interval_s=settings.mcts_replan_interval_s,
-            replan_interval_ev_s=settings.mcts_replan_interval_ev_s,
+            replan_interval_s=settings.agent_replan_interval_s,
+            replan_interval_ev_s=settings.agent_replan_interval_ev_s,
         )
 
         sim = EventDrivenSimulator(state, end_time=duration_s, seed=random_seed)
@@ -99,7 +97,7 @@ class SimulationService:
                 "data": snapshot,
                 "sim_time": snapshot.get("sim_time"),
             })
-            # Broadcast new MCTS decisions since last broadcast
+            # Broadcast new agent decisions since last broadcast.
             state = self._states[run_id]
             if (state.controller is not None
                     and hasattr(state.controller, 'decision_history')):
@@ -107,10 +105,10 @@ class SimulationService:
                 while last_decision_count < len(history):
                     d = history[last_decision_count]
                     d_dict = d.to_dict()
-                    d_dict["decision_id"] = f"mcts_{last_decision_count}"
+                    d_dict["decision_id"] = d_dict.get("decision_id", f"agent_{last_decision_count}")
                     d_dict["sim_time"] = snapshot.get("sim_time", 0)
                     await ws_manager.broadcast_admin(run_id, {
-                        "type": "mcts_decision",
+                        "type": "agent_decision",
                         "data": d_dict,
                         "sim_time": snapshot.get("sim_time"),
                     })
@@ -228,7 +226,7 @@ class SimulationService:
             "waiting_at": ev.waiting_at_intersection,
         }
 
-    def get_mcts_decisions(self, run_id: str) -> list[dict]:
+    def get_agent_decisions(self, run_id: str) -> list[dict]:
         state = self._states.get(run_id)
         if state is None or state.controller is None:
             return []
@@ -237,7 +235,7 @@ class SimulationService:
         results = []
         for i, d in enumerate(state.controller.decision_history):
             d_dict = d.to_dict()
-            d_dict["decision_id"] = f"mcts_{i}"
+            d_dict["decision_id"] = d_dict.get("decision_id", f"agent_{i}")
             d_dict.setdefault("sim_time", 0)
             results.append(d_dict)
         return results
