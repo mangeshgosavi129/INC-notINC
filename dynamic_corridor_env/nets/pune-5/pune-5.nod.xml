@@ -1,0 +1,36 @@
+<nodes>
+    <node id="NW_OUT" x="-300" y="900" type="priority"/>
+    <node id="E1" x="1200" y="900" type="priority"/>
+    <node id="W2" x="-300" y="600" type="priority"/>
+    <node id="E2" x="1200" y="600" type="priority"/>
+    <node id="W3" x="-300" y="300" type="priority"/>
+    <node id="E3" x="1200" y="300" type="priority"/>
+    <node id="W4" x="-300" y="0" type="priority"/>
+    <node id="SE_OUT" x="1200" y="0" type="priority"/>
+
+    <node id="N1" x="0" y="1200" type="priority"/>
+    <node id="S1" x="0" y="-300" type="priority"/>
+    <node id="N2" x="300" y="1200" type="priority"/>
+    <node id="S2" x="300" y="-300" type="priority"/>
+    <node id="N3" x="600" y="1200" type="priority"/>
+    <node id="S3" x="600" y="-300" type="priority"/>
+    <node id="N4" x="900" y="1200" type="priority"/>
+    <node id="S4" x="900" y="-300" type="priority"/>
+
+    <node id="INT_1_1" x="0" y="900" type="traffic_light"/>
+    <node id="INT_1_2" x="300" y="900" type="traffic_light"/>
+    <node id="INT_1_3" x="600" y="900" type="traffic_light"/>
+    <node id="INT_1_4" x="900" y="900" type="traffic_light"/>
+    <node id="INT_2_1" x="0" y="600" type="traffic_light"/>
+    <node id="INT_2_2" x="300" y="600" type="traffic_light"/>
+    <node id="INT_2_3" x="600" y="600" type="traffic_light"/>
+    <node id="INT_2_4" x="900" y="600" type="traffic_light"/>
+    <node id="INT_3_1" x="0" y="300" type="traffic_light"/>
+    <node id="INT_3_2" x="300" y="300" type="traffic_light"/>
+    <node id="INT_3_3" x="600" y="300" type="traffic_light"/>
+    <node id="INT_3_4" x="900" y="300" type="traffic_light"/>
+    <node id="INT_4_1" x="0" y="0" type="traffic_light"/>
+    <node id="INT_4_2" x="300" y="0" type="traffic_light"/>
+    <node id="INT_4_3" x="600" y="0" type="traffic_light"/>
+    <node id="INT_4_4" x="900" y="0" type="traffic_light"/>
+</nodes>

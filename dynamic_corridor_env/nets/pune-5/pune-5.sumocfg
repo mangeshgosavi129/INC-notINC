@@ -1,0 +1,10 @@
+<configuration>
+    <input>
+        <net-file value="pune-5.net.xml"/>
+        <route-files value="pune-5.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="900"/>
+    </time>
+</configuration>

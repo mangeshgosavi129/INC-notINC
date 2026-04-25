@@ -1,0 +1,11 @@
+spec_version: 1
+name: dynamic-corridor-env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
+description: SUMO-backed emergency vehicle dynamic corridor clearing environment
+tasks:
+  - id: pune_5_default
+    difficulty: medium
+    description: 5-intersection Pune corridor slice with background traffic and one ambulance

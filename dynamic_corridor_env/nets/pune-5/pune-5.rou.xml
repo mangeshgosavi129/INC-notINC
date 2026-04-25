@@ -1,0 +1,44 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="20"/>
+    <vType id="ambulance" accel="3.2" decel="5.0" sigma="0.2" length="6" minGap="2.5" maxSpeed="28" color="1,0,0" guiShape="emergency"/>
+
+    <route id="ev_route" edges="NW_OUT_TO_INT_1_1 INT_1_1_TO_INT_1_2 INT_1_2_TO_INT_1_3 INT_1_3_TO_INT_1_4 INT_1_4_TO_INT_2_4 INT_2_4_TO_INT_3_4 INT_3_4_TO_INT_4_4 INT_4_4_TO_SE_OUT"/>
+
+    <route id="row_1_ew" edges="NW_OUT_TO_INT_1_1 INT_1_1_TO_INT_1_2 INT_1_2_TO_INT_1_3 INT_1_3_TO_INT_1_4 INT_1_4_TO_E1"/>
+    <route id="row_1_we" edges="E1_TO_INT_1_4 INT_1_4_TO_INT_1_3 INT_1_3_TO_INT_1_2 INT_1_2_TO_INT_1_1 INT_1_1_TO_NW_OUT"/>
+    <route id="row_2_ew" edges="W2_TO_INT_2_1 INT_2_1_TO_INT_2_2 INT_2_2_TO_INT_2_3 INT_2_3_TO_INT_2_4 INT_2_4_TO_E2"/>
+    <route id="row_2_we" edges="E2_TO_INT_2_4 INT_2_4_TO_INT_2_3 INT_2_3_TO_INT_2_2 INT_2_2_TO_INT_2_1 INT_2_1_TO_W2"/>
+    <route id="row_3_ew" edges="W3_TO_INT_3_1 INT_3_1_TO_INT_3_2 INT_3_2_TO_INT_3_3 INT_3_3_TO_INT_3_4 INT_3_4_TO_E3"/>
+    <route id="row_3_we" edges="E3_TO_INT_3_4 INT_3_4_TO_INT_3_3 INT_3_3_TO_INT_3_2 INT_3_2_TO_INT_3_1 INT_3_1_TO_W3"/>
+    <route id="row_4_ew" edges="W4_TO_INT_4_1 INT_4_1_TO_INT_4_2 INT_4_2_TO_INT_4_3 INT_4_3_TO_INT_4_4 INT_4_4_TO_SE_OUT"/>
+    <route id="row_4_we" edges="SE_OUT_TO_INT_4_4 INT_4_4_TO_INT_4_3 INT_4_3_TO_INT_4_2 INT_4_2_TO_INT_4_1 INT_4_1_TO_W4"/>
+
+    <route id="col_1_ns" edges="N1_TO_INT_1_1 INT_1_1_TO_INT_2_1 INT_2_1_TO_INT_3_1 INT_3_1_TO_INT_4_1 INT_4_1_TO_S1"/>
+    <route id="col_1_sn" edges="S1_TO_INT_4_1 INT_4_1_TO_INT_3_1 INT_3_1_TO_INT_2_1 INT_2_1_TO_INT_1_1 INT_1_1_TO_N1"/>
+    <route id="col_2_ns" edges="N2_TO_INT_1_2 INT_1_2_TO_INT_2_2 INT_2_2_TO_INT_3_2 INT_3_2_TO_INT_4_2 INT_4_2_TO_S2"/>
+    <route id="col_2_sn" edges="S2_TO_INT_4_2 INT_4_2_TO_INT_3_2 INT_3_2_TO_INT_2_2 INT_2_2_TO_INT_1_2 INT_1_2_TO_N2"/>
+    <route id="col_3_ns" edges="N3_TO_INT_1_3 INT_1_3_TO_INT_2_3 INT_2_3_TO_INT_3_3 INT_3_3_TO_INT_4_3 INT_4_3_TO_S3"/>
+    <route id="col_3_sn" edges="S3_TO_INT_4_3 INT_4_3_TO_INT_3_3 INT_3_3_TO_INT_2_3 INT_2_3_TO_INT_1_3 INT_1_3_TO_N3"/>
+    <route id="col_4_ns" edges="N4_TO_INT_1_4 INT_1_4_TO_INT_2_4 INT_2_4_TO_INT_3_4 INT_3_4_TO_INT_4_4 INT_4_4_TO_S4"/>
+    <route id="col_4_sn" edges="S4_TO_INT_4_4 INT_4_4_TO_INT_3_4 INT_3_4_TO_INT_2_4 INT_2_4_TO_INT_1_4 INT_1_4_TO_N4"/>
+
+    <vehicle id="ambulance_0" type="ambulance" route="ev_route" depart="1" departLane="best" departSpeed="max"/>
+
+    <flow id="flow_row_1_ew" type="car" route="row_1_ew" begin="0" end="900" probability="0.08" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_1_we" type="car" route="row_1_we" begin="0" end="900" probability="0.07" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_2_ew" type="car" route="row_2_ew" begin="0" end="900" probability="0.09" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_2_we" type="car" route="row_2_we" begin="0" end="900" probability="0.08" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_3_ew" type="car" route="row_3_ew" begin="0" end="900" probability="0.08" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_3_we" type="car" route="row_3_we" begin="0" end="900" probability="0.09" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_4_ew" type="car" route="row_4_ew" begin="0" end="900" probability="0.07" departLane="best" departSpeed="max"/>
+    <flow id="flow_row_4_we" type="car" route="row_4_we" begin="0" end="900" probability="0.08" departLane="best" departSpeed="max"/>
+
+    <flow id="flow_col_1_ns" type="car" route="col_1_ns" begin="0" end="900" probability="0.07" departLane="best"/>
+    <flow id="flow_col_1_sn" type="car" route="col_1_sn" begin="0" end="900" probability="0.07" departLane="best"/>
+    <flow id="flow_col_2_ns" type="car" route="col_2_ns" begin="0" end="900" probability="0.08" departLane="best"/>
+    <flow id="flow_col_2_sn" type="car" route="col_2_sn" begin="0" end="900" probability="0.08" departLane="best"/>
+    <flow id="flow_col_3_ns" type="car" route="col_3_ns" begin="0" end="900" probability="0.08" departLane="best"/>
+    <flow id="flow_col_3_sn" type="car" route="col_3_sn" begin="0" end="900" probability="0.08" departLane="best"/>
+    <flow id="flow_col_4_ns" type="car" route="col_4_ns" begin="0" end="900" probability="0.07" departLane="best"/>
+    <flow id="flow_col_4_sn" type="car" route="col_4_sn" begin="0" end="900" probability="0.07" departLane="best"/>
+</routes>

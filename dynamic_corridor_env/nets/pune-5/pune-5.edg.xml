@@ -1,0 +1,89 @@
+<edges>
+    <edge id="NW_OUT_TO_INT_1_1" from="NW_OUT" to="INT_1_1" numLanes="2" speed="20"/>
+    <edge id="INT_1_1_TO_NW_OUT" from="INT_1_1" to="NW_OUT" numLanes="2" speed="18"/>
+    <edge id="INT_1_1_TO_INT_1_2" from="INT_1_1" to="INT_1_2" numLanes="2" speed="20"/>
+    <edge id="INT_1_2_TO_INT_1_1" from="INT_1_2" to="INT_1_1" numLanes="2" speed="18"/>
+    <edge id="INT_1_2_TO_INT_1_3" from="INT_1_2" to="INT_1_3" numLanes="2" speed="20"/>
+    <edge id="INT_1_3_TO_INT_1_2" from="INT_1_3" to="INT_1_2" numLanes="2" speed="18"/>
+    <edge id="INT_1_3_TO_INT_1_4" from="INT_1_3" to="INT_1_4" numLanes="2" speed="20"/>
+    <edge id="INT_1_4_TO_INT_1_3" from="INT_1_4" to="INT_1_3" numLanes="2" speed="18"/>
+    <edge id="INT_1_4_TO_E1" from="INT_1_4" to="E1" numLanes="2" speed="18"/>
+    <edge id="E1_TO_INT_1_4" from="E1" to="INT_1_4" numLanes="2" speed="18"/>
+
+    <edge id="W2_TO_INT_2_1" from="W2" to="INT_2_1" numLanes="2" speed="18"/>
+    <edge id="INT_2_1_TO_W2" from="INT_2_1" to="W2" numLanes="2" speed="18"/>
+    <edge id="INT_2_1_TO_INT_2_2" from="INT_2_1" to="INT_2_2" numLanes="2" speed="19"/>
+    <edge id="INT_2_2_TO_INT_2_1" from="INT_2_2" to="INT_2_1" numLanes="2" speed="18"/>
+    <edge id="INT_2_2_TO_INT_2_3" from="INT_2_2" to="INT_2_3" numLanes="2" speed="19"/>
+    <edge id="INT_2_3_TO_INT_2_2" from="INT_2_3" to="INT_2_2" numLanes="2" speed="18"/>
+    <edge id="INT_2_3_TO_INT_2_4" from="INT_2_3" to="INT_2_4" numLanes="2" speed="19"/>
+    <edge id="INT_2_4_TO_INT_2_3" from="INT_2_4" to="INT_2_3" numLanes="2" speed="18"/>
+    <edge id="INT_2_4_TO_E2" from="INT_2_4" to="E2" numLanes="2" speed="18"/>
+    <edge id="E2_TO_INT_2_4" from="E2" to="INT_2_4" numLanes="2" speed="18"/>
+
+    <edge id="W3_TO_INT_3_1" from="W3" to="INT_3_1" numLanes="2" speed="18"/>
+    <edge id="INT_3_1_TO_W3" from="INT_3_1" to="W3" numLanes="2" speed="18"/>
+    <edge id="INT_3_1_TO_INT_3_2" from="INT_3_1" to="INT_3_2" numLanes="2" speed="19"/>
+    <edge id="INT_3_2_TO_INT_3_1" from="INT_3_2" to="INT_3_1" numLanes="2" speed="18"/>
+    <edge id="INT_3_2_TO_INT_3_3" from="INT_3_2" to="INT_3_3" numLanes="2" speed="19"/>
+    <edge id="INT_3_3_TO_INT_3_2" from="INT_3_3" to="INT_3_2" numLanes="2" speed="18"/>
+    <edge id="INT_3_3_TO_INT_3_4" from="INT_3_3" to="INT_3_4" numLanes="2" speed="19"/>
+    <edge id="INT_3_4_TO_INT_3_3" from="INT_3_4" to="INT_3_3" numLanes="2" speed="18"/>
+    <edge id="INT_3_4_TO_E3" from="INT_3_4" to="E3" numLanes="2" speed="18"/>
+    <edge id="E3_TO_INT_3_4" from="E3" to="INT_3_4" numLanes="2" speed="18"/>
+
+    <edge id="W4_TO_INT_4_1" from="W4" to="INT_4_1" numLanes="2" speed="18"/>
+    <edge id="INT_4_1_TO_W4" from="INT_4_1" to="W4" numLanes="2" speed="18"/>
+    <edge id="INT_4_1_TO_INT_4_2" from="INT_4_1" to="INT_4_2" numLanes="2" speed="20"/>
+    <edge id="INT_4_2_TO_INT_4_1" from="INT_4_2" to="INT_4_1" numLanes="2" speed="18"/>
+    <edge id="INT_4_2_TO_INT_4_3" from="INT_4_2" to="INT_4_3" numLanes="2" speed="20"/>
+    <edge id="INT_4_3_TO_INT_4_2" from="INT_4_3" to="INT_4_2" numLanes="2" speed="18"/>
+    <edge id="INT_4_3_TO_INT_4_4" from="INT_4_3" to="INT_4_4" numLanes="2" speed="20"/>
+    <edge id="INT_4_4_TO_INT_4_3" from="INT_4_4" to="INT_4_3" numLanes="2" speed="18"/>
+    <edge id="INT_4_4_TO_SE_OUT" from="INT_4_4" to="SE_OUT" numLanes="2" speed="20"/>
+    <edge id="SE_OUT_TO_INT_4_4" from="SE_OUT" to="INT_4_4" numLanes="2" speed="18"/>
+
+    <edge id="N1_TO_INT_1_1" from="N1" to="INT_1_1" numLanes="1" speed="16"/>
+    <edge id="INT_1_1_TO_N1" from="INT_1_1" to="N1" numLanes="1" speed="14"/>
+    <edge id="INT_1_1_TO_INT_2_1" from="INT_1_1" to="INT_2_1" numLanes="1" speed="16"/>
+    <edge id="INT_2_1_TO_INT_1_1" from="INT_2_1" to="INT_1_1" numLanes="1" speed="14"/>
+    <edge id="INT_2_1_TO_INT_3_1" from="INT_2_1" to="INT_3_1" numLanes="1" speed="16"/>
+    <edge id="INT_3_1_TO_INT_2_1" from="INT_3_1" to="INT_2_1" numLanes="1" speed="14"/>
+    <edge id="INT_3_1_TO_INT_4_1" from="INT_3_1" to="INT_4_1" numLanes="1" speed="16"/>
+    <edge id="INT_4_1_TO_INT_3_1" from="INT_4_1" to="INT_3_1" numLanes="1" speed="14"/>
+    <edge id="INT_4_1_TO_S1" from="INT_4_1" to="S1" numLanes="1" speed="14"/>
+    <edge id="S1_TO_INT_4_1" from="S1" to="INT_4_1" numLanes="1" speed="14"/>
+
+    <edge id="N2_TO_INT_1_2" from="N2" to="INT_1_2" numLanes="1" speed="16"/>
+    <edge id="INT_1_2_TO_N2" from="INT_1_2" to="N2" numLanes="1" speed="14"/>
+    <edge id="INT_1_2_TO_INT_2_2" from="INT_1_2" to="INT_2_2" numLanes="1" speed="16"/>
+    <edge id="INT_2_2_TO_INT_1_2" from="INT_2_2" to="INT_1_2" numLanes="1" speed="14"/>
+    <edge id="INT_2_2_TO_INT_3_2" from="INT_2_2" to="INT_3_2" numLanes="1" speed="16"/>
+    <edge id="INT_3_2_TO_INT_2_2" from="INT_3_2" to="INT_2_2" numLanes="1" speed="14"/>
+    <edge id="INT_3_2_TO_INT_4_2" from="INT_3_2" to="INT_4_2" numLanes="1" speed="16"/>
+    <edge id="INT_4_2_TO_INT_3_2" from="INT_4_2" to="INT_3_2" numLanes="1" speed="14"/>
+    <edge id="INT_4_2_TO_S2" from="INT_4_2" to="S2" numLanes="1" speed="14"/>
+    <edge id="S2_TO_INT_4_2" from="S2" to="INT_4_2" numLanes="1" speed="14"/>
+
+    <edge id="N3_TO_INT_1_3" from="N3" to="INT_1_3" numLanes="1" speed="16"/>
+    <edge id="INT_1_3_TO_N3" from="INT_1_3" to="N3" numLanes="1" speed="14"/>
+    <edge id="INT_1_3_TO_INT_2_3" from="INT_1_3" to="INT_2_3" numLanes="1" speed="16"/>
+    <edge id="INT_2_3_TO_INT_1_3" from="INT_2_3" to="INT_1_3" numLanes="1" speed="14"/>
+    <edge id="INT_2_3_TO_INT_3_3" from="INT_2_3" to="INT_3_3" numLanes="1" speed="16"/>
+    <edge id="INT_3_3_TO_INT_2_3" from="INT_3_3" to="INT_2_3" numLanes="1" speed="14"/>
+    <edge id="INT_3_3_TO_INT_4_3" from="INT_3_3" to="INT_4_3" numLanes="1" speed="16"/>
+    <edge id="INT_4_3_TO_INT_3_3" from="INT_4_3" to="INT_3_3" numLanes="1" speed="14"/>
+    <edge id="INT_4_3_TO_S3" from="INT_4_3" to="S3" numLanes="1" speed="14"/>
+    <edge id="S3_TO_INT_4_3" from="S3" to="INT_4_3" numLanes="1" speed="14"/>
+
+    <edge id="N4_TO_INT_1_4" from="N4" to="INT_1_4" numLanes="1" speed="16"/>
+    <edge id="INT_1_4_TO_N4" from="INT_1_4" to="N4" numLanes="1" speed="14"/>
+    <edge id="INT_1_4_TO_INT_2_4" from="INT_1_4" to="INT_2_4" numLanes="1" speed="16"/>
+    <edge id="INT_2_4_TO_INT_1_4" from="INT_2_4" to="INT_1_4" numLanes="1" speed="14"/>
+    <edge id="INT_2_4_TO_INT_3_4" from="INT_2_4" to="INT_3_4" numLanes="1" speed="16"/>
+    <edge id="INT_3_4_TO_INT_2_4" from="INT_3_4" to="INT_2_4" numLanes="1" speed="14"/>
+    <edge id="INT_3_4_TO_INT_4_4" from="INT_3_4" to="INT_4_4" numLanes="1" speed="16"/>
+    <edge id="INT_4_4_TO_INT_3_4" from="INT_4_4" to="INT_3_4" numLanes="1" speed="14"/>
+    <edge id="INT_4_4_TO_S4" from="INT_4_4" to="S4" numLanes="1" speed="14"/>
+    <edge id="S4_TO_INT_4_4" from="S4" to="INT_4_4" numLanes="1" speed="14"/>
+</edges>
