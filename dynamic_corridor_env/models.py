@@ -9,7 +9,7 @@ from pydantic import Field
 
 
 class DynamicCorridorAction(Action):
-    """Central agent action containing per-intersection phase choices."""
+    """Environment action containing optional per-intersection phase choices."""
 
     phase_by_intersection: dict[str, int] = Field(
         default_factory=dict,
@@ -132,4 +132,8 @@ class DynamicCorridorState(State):
     max_queue: float = Field(0.0, description="Current maximum queue at one controlled intersection.")
     throughput: int = Field(0, description="Vehicles that arrived in the simulation.")
     phase_changes: int = Field(0, description="Phase changes requested by the agent.")
+    agent_runtime: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Read-only decentralized intersection-agent runtime metadata.",
+    )
     done: bool = Field(False, description="Whether the episode is complete.")

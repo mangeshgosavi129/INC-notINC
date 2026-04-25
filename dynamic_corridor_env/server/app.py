@@ -406,14 +406,7 @@ def visualization_page() -> HTMLResponse:
       return fields;
     }
 
-    function bestActionFromObservation(obs, visibleIds) {
-      const phase_by_intersection = {};
-      for (const ix of (obs.intersections || [])) {
-        if (!visibleIds.includes(ix.intersection_id)) {
-          continue;
-        }
-        phase_by_intersection[ix.intersection_id] = (ix.ev_target_phase ?? ix.current_phase ?? 0);
-      }
+    function stepActionFromObservation(obs) {
       const candidates = (obs.route_choice?.candidates || [])
         .filter(c => c.destination_reachable)
         .sort((a, b) => {
@@ -423,11 +416,14 @@ def visualization_page() -> HTMLResponse:
         });
       return {
         action: {
-          phase_by_intersection,
           next_edge_id: candidates[0]?.edge_id ?? null,
-          reason: "Auto target EV phase and lowest-cost route edge",
+          reason: "Client supplied route candidate only; signal control is decentralized",
         }
       };
+    }
+
+    function runtimeFromPayload(payload) {
+      return payload.observation?.global_metrics?.agent_runtime || {};
     }
 
     function visibleIntersections(obs) {
@@ -866,7 +862,8 @@ def visualization_page() -> HTMLResponse:
       evProgressLabel.textContent = (evProgress * 100).toFixed(1) + "%";
 
       const intersections = visibleIntersections(obs);
-      const actions = (payload.action_used?.phase_by_intersection || lastAction.phase_by_intersection || {});
+      const runtime = runtimeFromPayload(payload);
+      const actions = (payload.action_used?.phase_by_intersection || runtime.last_decisions_by_agent || {});
       const prevPayload = previousPayloadFor(payload);
       drawCorridor(obs, actions);
 
@@ -883,7 +880,7 @@ def visualization_page() -> HTMLResponse:
       renderTableRows(metricBody, metricRows(obs, payload));
       renderTableRows(rewardBody, rewardRows(obs, payload, prevPayload));
       renderStepData(payload, actions, prevPayload);
-      actionReason.textContent = payload.action_used?.reason || lastAction.reason || "Auto target EV phase";
+      actionReason.textContent = runtime.last_step_reason || payload.action_used?.reason || lastAction.reason || "Agent-routed decentralized control";
       if (!fromHistory) {
         previousSnapshot = payload;
       }
@@ -948,12 +945,15 @@ def visualization_page() -> HTMLResponse:
           return;
         }
 
-        const intersections = visibleIntersections(latestPayload.observation);
-        const visibleIds = intersections.map(ix => ix.intersection_id);
-        const actionPayload = bestActionFromObservation(latestPayload.observation, visibleIds);
+        const actionPayload = stepActionFromObservation(latestPayload.observation);
         lastAction = actionPayload.action;
         const data = await callApi("/step", actionPayload);
-        data.action_used = actionPayload.action;
+        const runtime = runtimeFromPayload(data);
+        data.action_used = {
+          ...actionPayload.action,
+          phase_by_intersection: runtime.last_decisions_by_agent || {},
+          reason: runtime.last_step_reason || actionPayload.action.reason,
+        };
         pushSnapshot(data);
         renderFromSnapshot(data);
 

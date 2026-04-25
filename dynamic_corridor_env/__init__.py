@@ -1,6 +1,7 @@
 """Dynamic corridor clearing environment for OpenEnv."""
 
 from .client import DynamicCorridorEnv
+from .decentralized import AgentConfig, AgentRuntime, IntersectionAgent, PeerMessage, PeerNetwork
 from .models import (
     DynamicCorridorAction,
     DynamicCorridorObservation,
@@ -22,6 +23,8 @@ from .route_ppo import RoutePpoPolicy
 
 __all__ = [
     "ActuatedPolicy",
+    "AgentConfig",
+    "AgentRuntime",
     "DynamicCorridorEnv",
     "DynamicCorridorAction",
     "DynamicCorridorObservation",
@@ -30,8 +33,11 @@ __all__ = [
     "EVObservation",
     "FixedTimePolicy",
     "GreenWavePolicy",
+    "IntersectionAgent",
     "IntersectionObservation",
     "MaxPressurePolicy",
+    "PeerMessage",
+    "PeerNetwork",
     "PpoPolicy",
     "RouteCandidateObservation",
     "RouteChoiceObservation",

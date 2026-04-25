@@ -91,6 +91,13 @@ def test_configurable_endpoint_route_defaults_without_starting_sumo():
     assert obs.active_route_edges[0] == "SE_OUT_TO_INT_4_4"
 
 
+def test_ev_approach_edge_prefers_active_route():
+    env = make_env()
+    configure_without_sumo(env)
+
+    assert env._ev_approach_edge_for("INT_2_4") == "INT_1_4_TO_INT_2_4"
+
+
 def test_next_edge_action_updates_pending_route_when_vehicle_not_active():
     env = make_env()
     configure_without_sumo(env)

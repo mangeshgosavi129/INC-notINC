@@ -19,6 +19,7 @@ from typing import Any
 from openenv.core.env_server.interfaces import Environment
 
 try:
+    from ..decentralized import AgentRuntime
     from ..models import (
         DynamicCorridorAction,
         DynamicCorridorObservation,
@@ -29,6 +30,7 @@ try:
         RouteChoiceObservation,
     )
 except ImportError:
+    from decentralized import AgentRuntime
     from models import (
         DynamicCorridorAction,
         DynamicCorridorObservation,
@@ -178,6 +180,7 @@ class DynamicCorridorEnvironment(Environment):
         self._active_route_edges: list[str] = list(self.scenario.ev_route_edges)
         self._pending_ev_route_edges: list[str] | None = None
         self._active_route_file: Path = self.route_file
+        self._agent_runtime = AgentRuntime(self.scenario.tls_ids)
         self._lock = threading.RLock()
 
     def reset(
@@ -219,11 +222,15 @@ class DynamicCorridorEnvironment(Environment):
             cumulative_reward=0.0,
             done=False,
         )
-        return self._observe(0.0, "Episode started.")
+        observation = self._observe(0.0, "Episode started.")
+        self._agent_runtime.reset(observation)
+        self._state.agent_runtime = self._agent_runtime.state()
+        observation.global_metrics["agent_runtime"] = self._agent_runtime.state()
+        return observation
 
-    def step(self, action: DynamicCorridorAction) -> DynamicCorridorObservation:
+    def step(self, action: DynamicCorridorAction | None = None) -> DynamicCorridorObservation:
         with self._lock:
-            return self._step_unlocked(action)
+            return self._step_unlocked(action or DynamicCorridorAction())
 
     def _step_unlocked(self, action: DynamicCorridorAction) -> DynamicCorridorObservation:
         if self._traci is None:
@@ -231,8 +238,14 @@ class DynamicCorridorEnvironment(Environment):
         if self._done:
             return self._observe(0.0, "Episode already finished.")
 
-        route_feedback = self._apply_route_choice(action)
-        invalid_actions = self._apply_action(action)
+        current_observation = self._observe(0.0, "Agent-routed step planning.")
+        agent_action = self._agent_runtime.step(current_observation)
+        agent_action.next_edge_id = action.next_edge_id
+        if action.reason:
+            agent_action.reason = f"{agent_action.reason} | client_reason={action.reason}"
+
+        route_feedback = self._apply_route_choice(agent_action)
+        invalid_actions = self._apply_action(agent_action)
         if route_feedback["invalid"]:
             invalid_actions += 1
         previous = self._last_metrics
@@ -252,7 +265,11 @@ class DynamicCorridorEnvironment(Environment):
 
         reward = self._normalize_reward(raw_reward)
         self._cumulative_reward += reward
-        feedback += f" raw_reward={raw_reward:.3f} normalized_reward={reward:.3f}"
+        feedback += (
+            f" raw_reward={raw_reward:.3f} normalized_reward={reward:.3f} "
+            f"active_agent={self._agent_runtime.state().get('active_agent_id', '') or '-'} "
+            f"touched_agents={len(self._agent_runtime.state().get('last_touched_agent_ids', []))}"
+        )
 
         self._state.step_count += 1
         self._sync_state(current)
@@ -740,6 +757,7 @@ class DynamicCorridorEnvironment(Environment):
                 "mean_speed": round(metrics["mean_speed"], 3),
                 "throughput": metrics["throughput"],
                 "phase_changes": metrics["phase_changes"],
+                "agent_runtime": self._agent_runtime.state(),
             },
             reward=reward,
             done=self._done,
@@ -811,6 +829,7 @@ class DynamicCorridorEnvironment(Environment):
         self._state.max_queue = metrics["max_queue"]
         self._state.throughput = metrics["throughput"]
         self._state.phase_changes = metrics["phase_changes"]
+        self._state.agent_runtime = self._agent_runtime.state()
         self._state.done = self._done
 
     def _valid_green_phases(self, tls_id: str) -> list[int]:
@@ -854,6 +873,15 @@ class DynamicCorridorEnvironment(Environment):
         return None
 
     def _ev_approach_edge_for(self, tls_id: str) -> str:
+        active_route = list(self._active_route_edges)
+        if self._traci is not None and self._vehicle_exists(self.scenario.ev_id):
+            try:
+                active_route = list(self._traci.vehicle.getRoute(self.scenario.ev_id))
+            except Exception:
+                pass
+        for edge_id in active_route:
+            if self.scenario.edge_to_intersection.get(edge_id) == tls_id:
+                return edge_id
         for edge_id, intersection_id in self.scenario.edge_to_intersection.items():
             if intersection_id == tls_id:
                 return edge_id
