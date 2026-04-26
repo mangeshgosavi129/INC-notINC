@@ -31,6 +31,7 @@ training = [
 server = "dynamic_corridor_env.server.app:main"
 baseline-disaster = "dynamic_corridor_env.baseline:main"
 evaluate-disaster = "dynamic_corridor_env.evaluate:main"
+train-remote-ppo = "dynamic_corridor_env.remote_ppo:main"
 
 [tool.setuptools]
 include-package-data = true
