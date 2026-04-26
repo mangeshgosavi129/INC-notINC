@@ -46,7 +46,7 @@ def test_graph_candidates_from_default_source_reach_destination():
     assert obs.candidates[0].destination_reachable is True
 
 
-def test_reverse_edge_is_marked_as_backtrack_and_penalized():
+def test_backtrack_candidate_is_flagged():
     env = make_env()
     configure_without_sumo(env)
 
@@ -54,30 +54,34 @@ def test_reverse_edge_is_marked_as_backtrack_and_penalized():
     reverse = next(candidate for candidate in candidates if candidate.edge_id == "INT_1_1_TO_NW_OUT")
 
     assert reverse.is_backtrack is True
-    reward, feedback = env._compute_reward(
-        previous={**env._empty_metrics(), "ev_progress": 0.2},
-        current={**env._empty_metrics(), "ev_progress": 0.2},
-        invalid_actions=0,
-        route_feedback={
-            "selected_edge": reverse.edge_id,
-            "invalid": False,
-            "road_weight": reverse.road_weight,
-            "estimated_queue": reverse.estimated_queue,
-            "moves_closer": reverse.moves_closer,
-            "is_backtrack": reverse.is_backtrack,
-            "destination_distance_delta": reverse.destination_distance_delta,
-        },
-    )
-    assert reward < -75.0
-    assert "route_backtrack=1" in feedback
 
 
-def test_reward_normalization_clamps_to_api_range():
+def test_weight_only_reward_matches_active_route_edge_weights():
+    env = make_env()
+    configure_without_sumo(env)
+    env._active_route_edges = ["NW_OUT_TO_INT_1_1", "INT_1_1_TO_INT_1_2"]
+    w0 = env._road_weights.get("NW_OUT_TO_INT_1_1", 0.0)
+    w1 = env._road_weights.get("INT_1_1_TO_INT_1_2", 0.0)
+    mean = (w0 + w1) / 2.0
+    reward, feedback = env._compute_reward({})
+    assert abs(reward - (1.0 - mean)) < 1e-6
+    assert 0.0 <= reward <= 1.0
+    assert "mean_road_weight" in feedback
+
+
+def test_invalid_route_choice_yields_zero_reward():
+    env = make_env()
+    configure_without_sumo(env)
+    reward, _ = env._compute_reward({"invalid": True, "selected_edge": "bad_edge"})
+    assert reward == 0.0
+
+
+def test_reward_clamps_to_unit_interval():
     env = make_env()
 
-    assert env._normalize_reward(-500.0) == -10.0
-    assert env._normalize_reward(500.0) == 10.0
-    assert env._normalize_reward(4.25) == 4.25
+    assert env._normalize_reward(-500.0) == 0.0
+    assert env._normalize_reward(500.0) == 1.0
+    assert env._normalize_reward(0.42) == 0.42
 
 
 def test_configurable_endpoint_route_defaults_without_starting_sumo():
@@ -92,10 +96,18 @@ def test_configurable_endpoint_route_defaults_without_starting_sumo():
 
 
 def test_ev_approach_edge_prefers_active_route():
+    """First route edge into each TLS must be the one returned (active route wins over the fallback map scan)."""
     env = make_env()
     configure_without_sumo(env)
 
-    assert env._ev_approach_edge_for("INT_2_4") == "INT_1_4_TO_INT_2_4"
+    seen: set[str] = set()
+    for edge_id in env._active_route_edges:
+        tls = env.scenario.edge_to_intersection.get(edge_id)
+        if not tls or tls in seen:
+            continue
+        seen.add(tls)
+        assert env._ev_approach_edge_for(tls) == edge_id
+    assert seen, "active route should include at least one edge mapped to a controllable intersection"
 
 
 def test_next_edge_action_updates_pending_route_when_vehicle_not_active():

@@ -125,8 +125,8 @@ class DynamicCorridorEnvironment(Environment):
     """Central-agent SUMO environment for emergency green-corridor learning."""
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = False
-    REWARD_MIN: float = -10.0
-    REWARD_MAX: float = 10.0
+    REWARD_MIN: float = 0.0
+    REWARD_MAX: float = 1.0
 
     def __init__(
         self,
@@ -252,15 +252,13 @@ class DynamicCorridorEnvironment(Environment):
         self._advance_sumo()
         current = self._collect_metrics()
 
-        raw_reward, feedback = self._compute_reward(previous, current, invalid_actions, route_feedback)
+        raw_reward, feedback = self._compute_reward(route_feedback)
         self._last_metrics = current
 
         self._done = bool(current["ev_arrived"] or current["sim_time"] >= self.scenario.max_sim_time_s)
         if self._done and current["ev_arrived"]:
-            raw_reward += max(0.0, 500.0 - current["ev_travel_time"])
             feedback += " | ambulance arrived"
         elif self._done:
-            raw_reward -= 500.0
             feedback += " | timeout before ambulance arrival"
 
         reward = self._normalize_reward(raw_reward)
@@ -474,6 +472,16 @@ class DynamicCorridorEnvironment(Environment):
         ]
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except FileNotFoundError as exc:
+            binary = cmd[0]
+            raise RuntimeError(
+                f"Could not run SUMO tool {binary!r} (file not found). "
+                "Install SUMO so that netconvert (and sumo) are on PATH, e.g. "
+                "`brew install sumo` on macOS, or `pip install eclipse-sumo` from "
+                "https://sumo.dlr.de/daily/wheels/ and ensure SUMO_HOME is set, "
+                "or place a pre-generated net at "
+                f"{str(self.net_file)} to skip this step (see README)."
+            ) from exc
         except subprocess.CalledProcessError as exc:
             raise RuntimeError(
                 "Failed to generate SUMO network with netconvert. "
@@ -650,53 +658,31 @@ class DynamicCorridorEnvironment(Environment):
                 if speed < 0.1:
                     self._ev_waiting_time += 1.0
 
-    def _compute_reward(
-        self,
-        previous: dict[str, Any],
-        current: dict[str, Any],
-        invalid_actions: int,
-        route_feedback: dict[str, Any] | None = None,
-    ) -> tuple[float, str]:
-        ev_progress_delta = current["ev_progress"] - previous["ev_progress"]
-        ev_wait_delta = current["ev_waiting_time"] - previous["ev_waiting_time"]
-        throughput_delta = current["throughput"] - previous["throughput"]
-        phase_delta = current["phase_changes"] - previous["phase_changes"]
-        queue_overflow = max(0.0, current["max_queue"] - 50.0)
+    def _mean_active_route_road_weight(self) -> float:
+        """Mean of per-edge seeded [0,1] weights over the current active EV route (road ids only)."""
+        if not self._active_route_edges:
+            return 0.0
+        weights = [float(self._road_weights.get(eid, 0.0)) for eid in self._active_route_edges]
+        return sum(weights) / max(1, len(weights))
+
+    def _compute_reward(self, route_feedback: dict[str, Any] | None) -> tuple[float, str]:
+        """
+        v2 reward: in [0,1], depends only on per-edge road weights (seeding + active route);
+        not on queues, EV wait, or signal phases. Lower mean road weight (lighter edges) is better.
+        """
         route_feedback = route_feedback or {}
-        route_delta = float(route_feedback.get("destination_distance_delta", 0.0))
-        route_reward = 0.05 * route_delta
-        route_reward -= 10.0 * float(route_feedback.get("road_weight", 0.0))
-        route_reward -= 0.25 * float(route_feedback.get("estimated_queue", 0.0))
-        if route_feedback.get("is_backtrack"):
-            route_reward -= 75.0
-        if route_feedback.get("selected_edge") and not route_feedback.get("moves_closer", False):
-            route_reward -= 25.0
+        mean_w = self._mean_active_route_road_weight()
         if route_feedback.get("invalid"):
-            route_reward -= 50.0
-
-        reward = (
-            20.0 * ev_progress_delta
-            - 100.0 * ev_wait_delta
-            - 1.0 * current["total_queue"]
-            - 2.0 * queue_overflow
-            - 0.1 * phase_delta
-            + 0.5 * throughput_delta
-            - 5.0 * invalid_actions
-            + route_reward
-        )
-
+            raw = 0.0
+        else:
+            raw = 1.0 - mean_w
+        raw = max(0.0, min(1.0, float(raw)))
         feedback = (
-            f"progress_delta={ev_progress_delta:.3f} "
-            f"ev_wait_delta={ev_wait_delta:.1f}s "
-            f"queue={current['total_queue']:.1f} "
-            f"throughput_delta={throughput_delta} "
-            f"invalid_actions={invalid_actions} "
-            f"route_edge={route_feedback.get('selected_edge', '') or '-'} "
-            f"route_delta={route_delta:.1f} "
-            f"route_backtrack={int(bool(route_feedback.get('is_backtrack')))} "
-            f"route_invalid={int(bool(route_feedback.get('invalid')))}"
+            f"weight_only mean_road_weight={mean_w:.4f} reward={raw:.4f} "
+            f"route_invalid={int(bool(route_feedback.get('invalid')))} "
+            f"route_edge={route_feedback.get('selected_edge', '') or '-'}"
         )
-        return reward, feedback
+        return raw, feedback
 
     def _normalize_reward(self, reward: float) -> float:
         return max(self.REWARD_MIN, min(self.REWARD_MAX, float(reward)))

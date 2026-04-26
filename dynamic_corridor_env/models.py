@@ -112,7 +112,7 @@ class DynamicCorridorObservation(Observation):
     ev: EVObservation = Field(default_factory=EVObservation)
     route_choice: RouteChoiceObservation = Field(default_factory=RouteChoiceObservation)
     global_metrics: dict[str, Any] = Field(default_factory=dict)
-    reward: float = Field(0.0, description="Reward from the previous action.")
+    reward: float = Field(0.0, description="Reward from the previous action, in [0, 1] (weight-based v2).")
     done: bool = Field(False, description="Whether the episode has ended.")
     feedback: str = Field("", description="Human-readable summary of the last transition.")
 

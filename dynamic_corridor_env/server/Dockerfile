@@ -39,11 +39,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
+# Include optional `training` extra (torch, numpy) so PPO and policies can run in-container.
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -f uv.lock ]; then \
-        uv sync --frozen --no-editable; \
+        uv sync --frozen --no-editable --extra training; \
     else \
-        uv sync --no-editable; \
+        uv sync --no-editable --extra training; \
     fi
 
 ENV PATH="/app/env/.venv/bin:$PATH"

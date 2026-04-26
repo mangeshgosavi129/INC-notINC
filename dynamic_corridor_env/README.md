@@ -57,25 +57,14 @@ Each observation contains:
 
 ## Reward
 
-The v1 reward is EV-first but still penalizes normal traffic disruption:
+v2 (current): the step **reward in `[0, 1]`** depends **only** on the seeded **per-edge road weights** in `route_choice.road_weights` and the current **active EV route** (list of edge IDs). It does not use queue length, EV wait, phase changes, or throughput in the score.
 
 ```text
-raw_reward =
-  20  * ev_progress_delta
-  - 100 * ev_wait_time_delta
-  - 1   * total_queue
-  - 2   * max(0, max_queue - 50)
-  - 0.1 * phase_changes
-  + 0.5 * throughput_delta
-  - 5   * invalid_actions
+mean_road_weight = mean(w(e) for e in active_route_edges)   # each w in [0, 1]
+reward = 1.0 - mean_road_weight                              # better when edges are "lighter"
 ```
 
-Terminal rewards:
-
-- Ambulance arrives: `+ max(0, 500 - ev_travel_time)`
-- Timeout: `-500`
-
-The environment returns the final reward normalized to `[-10, 10]` after all step and terminal terms are combined. The step feedback includes both `raw_reward` and `normalized_reward` for debugging.
+If a route choice action is **invalid** for this step, the reward is `0.0`. Arrival/timeout is still reported in the `feedback` string for debugging but no longer changes the scalar (no extra terminal bonus/penalty in the v2 reward itself).
 
 The main evaluation baseline metric is EV travel-time improvement over fixed-time, greedy preemption, or the existing RHMCTS controller:
 
