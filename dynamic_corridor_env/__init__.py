@@ -11,6 +11,7 @@ from .models import (
     RouteCandidateObservation,
     RouteChoiceObservation,
 )
+from .meta_agents import TrafficR1AgentRuntime
 from .policies import (
     ActuatedPolicy,
     EmergencyAwarePolicy,
@@ -42,5 +43,6 @@ __all__ = [
     "RouteCandidateObservation",
     "RouteChoiceObservation",
     "RoutePpoPolicy",
+    "TrafficR1AgentRuntime",
     "train",
 ]

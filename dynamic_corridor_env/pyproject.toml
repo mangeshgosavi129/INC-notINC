@@ -13,6 +13,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "uvicorn>=0.24.0",
     "requests>=2.31.0",
+    "huggingface-hub>=0.24.0",
     "traci>=1.14.0",
     "sumolib>=1.14.0",
 ]
@@ -28,6 +29,8 @@ training = [
 
 [project.scripts]
 server = "dynamic_corridor_env.server.app:main"
+baseline-disaster = "dynamic_corridor_env.baseline:main"
+evaluate-disaster = "dynamic_corridor_env.evaluate:main"
 
 [tool.setuptools]
 include-package-data = true

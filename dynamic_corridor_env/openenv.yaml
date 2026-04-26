@@ -4,8 +4,8 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
-description: SUMO-backed emergency vehicle dynamic corridor clearing environment
+description: SUMO-backed disaster-mode emergency vehicle corridor environment with Traffic-R1 LLM control
 tasks:
-  - id: pune_5_default
-    difficulty: medium
-    description: 5-intersection Pune corridor slice with background traffic and one ambulance
+  - id: grid_4x4_default
+    difficulty: hard
+    description: 16-intersection disaster corridor with one ambulance, road incidents, congestion surges, and route choice

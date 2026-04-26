@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import logging
 
 from fastapi.responses import HTMLResponse
 from openenv.core.env_server.http_server import create_app
@@ -15,6 +16,9 @@ except (ModuleNotFoundError, ImportError):
     from server.dynamic_corridor_environment import DynamicCorridorEnvironment
 
 _SHARED_ENV: DynamicCorridorEnvironment | None = None
+logging.getLogger("dynamic_corridor_env.meta_agents").setLevel(
+    os.getenv("DYNAMIC_CORRIDOR_LOG_LEVEL", "INFO").upper()
+)
 
 
 def _build_dynamic_corridor_environment() -> DynamicCorridorEnvironment:
@@ -158,6 +162,12 @@ def visualization_page() -> HTMLResponse:
       background: #51617b;
     }
     .snapshotPill { color: #d0dcf2; background: #202b3f; border: 1px solid #324059; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+    .signalLamp { transition: fill 0.12s linear, opacity 0.12s linear; }
+    .signalLamp.evGreen { animation: signalPulse 0.55s ease-in-out infinite; }
+    @keyframes signalPulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.45); }
+    }
     @media (max-width: 1180px) {
       .layout { grid-template-columns: 1fr; }
       .split { grid-template-columns: 1fr; }
@@ -201,8 +211,9 @@ def visualization_page() -> HTMLResponse:
       <div class="corridorWrap">
         <svg id="corridor" viewBox="0 0 1100 700" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="legend">
-          <span><span class="dot" style="background: #66d19e;"></span>Current green phase serves EV</span>
-          <span><span class="dot" style="background: #f87171;"></span>Phase mismatch</span>
+          <span><span class="dot" style="background: #22c55e;"></span>Green signal</span>
+          <span><span class="dot" style="background: #facc15;"></span>Yellow signal</span>
+          <span><span class="dot" style="background: #ef4444;"></span>Red signal</span>
           <span><span class="dot" style="background: #41b5ff;"></span>Emergency vehicle</span>
           <span><span class="dot" style="background: #f5a524;"></span>Queue bars</span>
           <span><span class="dot" style="background: #22c55e;"></span>Low traffic road weight</span>
@@ -407,17 +418,10 @@ def visualization_page() -> HTMLResponse:
     }
 
     function stepActionFromObservation(obs) {
-      const candidates = (obs.route_choice?.candidates || [])
-        .filter(c => c.destination_reachable)
-        .sort((a, b) => {
-          const aScore = (a.is_backtrack ? 1000 : 0) + (a.moves_closer ? 0 : 100) + Number(a.road_weight || 0) + Number(a.estimated_queue || 0) * 0.05;
-          const bScore = (b.is_backtrack ? 1000 : 0) + (b.moves_closer ? 0 : 100) + Number(b.road_weight || 0) + Number(b.estimated_queue || 0) * 0.05;
-          return aScore - bScore;
-        });
       return {
         action: {
-          next_edge_id: candidates[0]?.edge_id ?? null,
-          reason: "Client supplied route candidate only; signal control is decentralized",
+          phase_by_intersection: {},
+          reason: "Use default Traffic-R1 controller",
         }
       };
     }
@@ -459,7 +463,16 @@ def visualization_page() -> HTMLResponse:
 
     function metricRows(obs, payload) {
       const gm = obs.global_metrics || {};
+      const runtime = gm.agent_runtime || {};
+      const disaster = gm.disaster_context || {};
       return [
+        ["Agent mode", runtime.mode || "decentralized"],
+        ["LLM model", runtime.model_id || "-"],
+        ["LLM fallback", runtime.fallback === undefined ? "-" : String(Boolean(runtime.fallback))],
+        ["Parse success", runtime.parse_success === undefined ? "-" : String(Boolean(runtime.parse_success))],
+        ["Blocked edges", (disaster.blocked_edges || []).join(", ") || "-"],
+        ["Demand surges", Object.keys(disaster.demand_surge_intersections || {}).join(", ") || "-"],
+        ["Deadline remaining", disaster.deadline_steps_remaining ?? "-"],
         ["Throughput", gm.throughput ?? 0],
         ["Vehicle count", gm.vehicle_count ?? 0],
         ["Mean speed", Number(gm.mean_speed ?? 0).toFixed(2)],
@@ -475,17 +488,20 @@ def visualization_page() -> HTMLResponse:
 
     function rewardRows(obs, payload, prevPayload) {
       const parsed = parseFeedback(obs.feedback);
+      const breakdown = obs.global_metrics?.reward_breakdown || {};
       const currentProgress = Number(obs.ev?.progress || 0);
       const prevProgress = Number(prevPayload?.observation?.ev?.progress || 0);
       const progressDelta = currentProgress - prevProgress;
       return [
         ["Reward", Number(payload.reward ?? 0).toFixed(3)],
         ["Progress delta", Number(progressDelta).toFixed(3)],
-        ["Feedback progress", parsed.progress_delta ?? "-"],
-        ["Feedback ev wait", parsed.ev_wait_delta ?? "-"],
-        ["Feedback queue", parsed.queue ?? "-"],
-        ["Feedback throughput", parsed.throughput_delta ?? "-"],
-        ["Invalid actions", parsed.invalid_actions ?? "0"],
+        ["Progress score", breakdown.progress_score ?? parsed.progress_delta ?? "-"],
+        ["Route score", breakdown.route_score ?? "-"],
+        ["Traffic score", breakdown.traffic_score ?? "-"],
+        ["EV wait penalty", breakdown.ev_wait_penalty ?? parsed.ev_wait_delta ?? "-"],
+        ["Disaster route penalty", breakdown.disaster_route_penalty ?? "-"],
+        ["Deadline penalty", breakdown.hospital_deadline_penalty ?? "-"],
+        ["Invalid penalty", breakdown.invalid_action_penalty ?? parsed.invalid_actions ?? "0"],
         ["Route edge", parsed.route_edge ?? "-"],
         ["Route backtrack", parsed.route_backtrack ?? "0"],
       ];
@@ -635,19 +651,6 @@ def visualization_page() -> HTMLResponse:
       rawSnapshotJson.textContent = JSON.stringify(payload, null, 2);
     }
 
-    function phaseSignalColor(ix, chosenPhase) {
-      const active = Number(ix.current_phase ?? 0);
-      const chosen = Number(chosenPhase ?? active);
-      const target = ix.ev_target_phase;
-      if (target !== null && target !== undefined && chosen === target) {
-        return "#66d19e";
-      }
-      if (chosen !== active) {
-        return "#f5a524";
-      }
-      return "#f87171";
-    }
-
     function roadWeightColor(weight) {
       const value = Number(weight || 0);
       if (value >= 0.66) {
@@ -683,13 +686,20 @@ def visualization_page() -> HTMLResponse:
       if (weight === null || Number.isNaN(weight)) {
         return "";
       }
+      const disaster = latestPayload?.observation?.global_metrics?.disaster_context || {};
+      const blocked = (disaster.blocked_edges || []).includes(edgeId);
+      if (blocked) {
+        return `
+          <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ff9ca6" stroke-width="11" stroke-linecap="round" stroke-dasharray="10 8" opacity="1"/>
+        `;
+      }
       const color = roadWeightColor(weight);
       return `
         <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="8" stroke-linecap="round" opacity="0.98"/>
       `;
     }
 
-    function drawCorridor(obs, actionByIntersection) {
+    function drawCorridor(obs) {
       const intersections = (obs.intersections || [])
         .filter(ix => INTERSECTION_ORDER.includes(ix.intersection_id))
         .sort((a, b) => INTERSECTION_ORDER.indexOf(a.intersection_id) - INTERSECTION_ORDER.indexOf(b.intersection_id));
@@ -750,6 +760,41 @@ def visualization_page() -> HTMLResponse:
         }
         return dy < 0 ? "N" : "S";
       };
+      const edgeForSignalSide = (side, intersectionId) => {
+        const point = pointForNode(intersectionId);
+        if (!point) {
+          return "";
+        }
+        const candidates = Object.keys(obs.route_choice?.road_weights || {})
+          .map(edgeId => ({ edgeId, edge: edgeToNodes(edgeId) }))
+          .filter(item => item.edge && item.edge.to === intersectionId);
+        for (const item of candidates) {
+          const fromPoint = pointForNode(item.edge.from);
+          if (!fromPoint) {
+            continue;
+          }
+          const dx = fromPoint.x - point.x;
+          const dy = fromPoint.y - point.y;
+          const candidateSide = Math.abs(dx) > Math.abs(dy)
+            ? (dx < 0 ? "W" : "E")
+            : (dy < 0 ? "N" : "S");
+          if (candidateSide === side) {
+            return item.edgeId;
+          }
+        }
+        return "";
+      };
+      const signalColorForSide = (ix, side) => {
+        const edgeId = edgeForSignalSide(side, ix.intersection_id);
+        const state = ix.signal_state_by_edge?.[edgeId] || "red";
+        if (state === "green") {
+          return "#22c55e";
+        }
+        if (state === "yellow") {
+          return "#facc15";
+        }
+        return "#ef4444";
+      };
 
       let svg = "";
       svg += `<rect x="0" y="0" width="${width}" height="${height}" fill="#0b1320"/>`;
@@ -800,8 +845,6 @@ def visualization_page() -> HTMLResponse:
           return;
         }
         const { x, y } = point;
-        const chosen = actionByIntersection[ix.intersection_id];
-        const signalColor = phaseSignalColor(ix, chosen);
         const queue = Number(ix.queue_length || 0);
         const qHeight = Math.min(52, queue * 5);
         const evSignalSide = signalSideForEdge(ix.ev_approach_edge, ix.intersection_id);
@@ -814,8 +857,9 @@ def visualization_page() -> HTMLResponse:
 
         svg += `<rect x="${x - 25}" y="${y - 25}" width="50" height="50" rx="8" fill="#111c2d" stroke="#d8e3f7" stroke-width="1.2"/>`;
         signalPoints.forEach(([side, sx, sy, label]) => {
-          const fill = side === evSignalSide ? signalColor : "#5f6f88";
-          svg += `<circle cx="${sx}" cy="${sy}" r="10" fill="${fill}" stroke="#e8f0ff" stroke-width="1"/>`;
+          const fill = signalColorForSide(ix, side);
+          const isEvGreen = side === evSignalSide && fill === "#22c55e";
+          svg += `<circle class="signalLamp${isEvGreen ? " evGreen" : ""}" cx="${sx}" cy="${sy}" r="10" fill="${fill}" stroke="#e8f0ff" stroke-width="1"/>`;
           svg += `<text x="${sx}" y="${sy + 4}" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800">${label}</text>`;
         });
         svg += `<rect x="${x - 20}" y="${y + 47}" width="40" height="${qHeight}" fill="#f5a524" opacity="0.9"/>`;
@@ -865,7 +909,7 @@ def visualization_page() -> HTMLResponse:
       const runtime = runtimeFromPayload(payload);
       const actions = (payload.action_used?.phase_by_intersection || runtime.last_decisions_by_agent || {});
       const prevPayload = previousPayloadFor(payload);
-      drawCorridor(obs, actions);
+      drawCorridor(obs);
 
       decisionBody.innerHTML = intersections.map(ix => `
         <tr>
@@ -991,7 +1035,7 @@ def visualization_page() -> HTMLResponse:
           return;
         }
         doStep();
-      }, 850);
+      }, 500);
     });
     pauseBtn.addEventListener("click", stopAuto);
     intersectionLimit.addEventListener("change", () => {

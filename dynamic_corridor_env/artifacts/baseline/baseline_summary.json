@@ -1,0 +1,10 @@
+{
+  "episodes": 50,
+  "arrival_rate": 1.0,
+  "total_reward_mean": 16.21092,
+  "total_reward_median": 16.262,
+  "total_reward_min": 12.364,
+  "total_reward_max": 19.799,
+  "ev_travel_time_mean_arrivals": 153.92,
+  "ev_travel_time_median_arrivals": 151.5
+}

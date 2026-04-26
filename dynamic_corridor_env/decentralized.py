@@ -36,8 +36,8 @@ class AgentConfig:
     message_ttl: int = 2
     prestage_window_steps: int = 8
     preempt_window_steps: int = 3
-    min_green_steps: int = 2
-    max_hold_steps: int = 30
+    min_green_steps: int = 1
+    max_hold_steps: int = 8
 
 
 class PeerNetwork:

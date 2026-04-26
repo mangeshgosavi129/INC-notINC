@@ -1,8 +1,54 @@
-# Dynamic Corridor Environment
+---
+title: Smart Traffic Dynamic Corridor
+emoji: 🚑
+colorFrom: red
+colorTo: blue
+sdk: docker
+app_port: 8000
+pinned: false
+---
 
-OpenEnv environment for emergency vehicle green-corridor learning with SUMO.
+# Disaster Dynamic Corridor Environment
 
-The environment models a 5-intersection Pune corridor slice. A central RL agent observes local traffic state for each intersection plus global ambulance progress, then submits a bundle of phase choices.
+OpenEnv environment for LLM-controlled emergency traffic response. The task targets Theme #3 World Modeling with a multi-agent flavor: a controller must keep a live model of a partially observable 16-intersection city grid while a hospital-bound ambulance, road incidents, congestion surges, and degraded roads change the corridor over time.
+
+The default controller is `Season998/Traffic-R1` through Hugging Face Inference Providers. The server asks the model for strict JSON matching `DynamicCorridorAction`; if Hugging Face is unavailable, it falls back to the rule-based peer-agent controller so demos and tests still run.
+
+## What The Agent Does
+
+At each step the agent receives the existing OpenEnv observation:
+
+- `intersections`: signal phases, valid green phases, queues, EV ETA, EV target phase, and approach signal states.
+- `ev`: ambulance route, current edge, progress, waiting time, travel time, and arrival status.
+- `route_choice`: candidate next road edges, seeded road weights, queues, backtracking flags, and reachability.
+- `global_metrics`: traffic metrics, Traffic-R1 runtime status, reward breakdown, and disaster context.
+
+The action schema is unchanged:
+
+```json
+{
+  "phase_by_intersection": {
+    "INT_1_1": 1
+  },
+  "next_edge_id": "NW_OUT_TO_INT_1_1",
+  "reason": "clear ambulance route"
+}
+```
+
+If a client sends a non-empty action, the environment applies it directly. If the client sends an empty/default action, the internal Traffic-R1 runtime chooses signal phases and route choices.
+
+## Disaster Mode
+
+Each reset deterministically creates a seeded disaster episode:
+
+- temporary blocked road edges,
+- degraded-speed road segments,
+- demand surges at selected intersections,
+- a hospital urgency deadline.
+
+The public Pydantic models are unchanged. Incident state is exposed through `observation.global_metrics["disaster_context"]`, and reward details are exposed through `observation.global_metrics["reward_breakdown"]`.
+
+Blocked and degraded roads affect route candidates and route scoring. Demand surges affect queue pressure. The reward still stays in `[0, 1]`, but now explicitly values EV progress, safe rerouting around blocked edges, low EV waiting time, controlled queues, throughput, and limited phase churn.
 
 ## API
 
@@ -10,73 +56,51 @@ The environment models a 5-intersection Pune corridor slice. A central RL agent 
 from dynamic_corridor_env import DynamicCorridorAction, DynamicCorridorEnv
 
 env = DynamicCorridorEnv(base_url="http://localhost:8000")
-result = env.reset()
+result = env.reset(task_id="grid_4x4_default")
 
 action = DynamicCorridorAction(
     phase_by_intersection={
         ix.intersection_id: ix.ev_target_phase or ix.current_phase
         for ix in result.observation.intersections
-    }
+    },
+    next_edge_id=(
+        result.observation.route_choice.candidates[0].edge_id
+        if result.observation.route_choice.candidates
+        else None
+    ),
 )
 result = env.step(action)
 ```
 
-Route-choice actions can also select the ambulance's next directed road edge:
+For backward compatibility, reset requests using `task_id="pune_5_default"` are accepted and mapped to `grid_4x4_default`.
 
-```python
-action = DynamicCorridorAction(next_edge_id="WEST_TO_INT_01")
-result = env.step(action)
-```
+## Hugging Face Configuration
 
-`reset` accepts optional `source_id` and `destination_id` fields through the HTTP API. They default to `WEST` and `EAST`. Each reset assigns seeded random road weights for the episode and exposes them in `observation.route_choice`.
+Set these environment variables in local runs or as Hugging Face Space secrets:
 
-## Action
+| Variable | Default |
+| --- | --- |
+| `HF_TOKEN` | required for Traffic-R1 calls |
+| `HF_MODEL` | `Season998/Traffic-R1` |
+| `HF_PROVIDER` | `auto` |
+| `HF_TIMEOUT_SECONDS` | `20` |
+| `HF_MAX_RETRIES` | `2` |
+| `DYNAMIC_CORRIDOR_AGENT_MODE` | `traffic_r1` |
+| `DYNAMIC_CORRIDOR_DISASTER_MODE` | `1` |
 
-`DynamicCorridorAction.phase_by_intersection` maps intersection IDs to SUMO green-phase indices:
+Fallback/offline modes:
 
-```json
-{
-  "INT_01": 0,
-  "INT_02": 2,
-  "INT_03": 0
-}
-```
-
-Missing intersections hold their current phase. Invalid phase IDs are ignored and penalized.
-
-`DynamicCorridorAction.next_edge_id` selects the ambulance's next candidate road. Invalid, unreachable, or non-candidate edges are penalized. Backtracking and moves away from the destination receive additional route-choice penalties.
-
-## Observation
-
-Each observation contains:
-
-- `intersections`: current phase, valid phases, queue length, vehicle count, mean speed, EV route flag, and EV target phase.
-- `ev`: route, next intersection, progress, waiting time, travel time, and arrival status.
-- `route_choice`: source, destination, current node/edge, previous edge, active route, seeded road weights, and candidate next-road options.
-- `global_metrics`: total queue, max queue, throughput, mean speed, and phase changes.
-
-## Reward
-
-v2 (current): the step **reward in `[0, 1]`** depends **only** on the seeded **per-edge road weights** in `route_choice.road_weights` and the current **active EV route** (list of edge IDs). It does not use queue length, EV wait, phase changes, or throughput in the score.
-
-```text
-mean_road_weight = mean(w(e) for e in active_route_edges)   # each w in [0, 1]
-reward = 1.0 - mean_road_weight                              # better when edges are "lighter"
-```
-
-If a route choice action is **invalid** for this step, the reward is `0.0`. Arrival/timeout is still reported in the `feedback` string for debugging but no longer changes the scalar (no extra terminal bonus/penalty in the v2 reward itself).
-
-The main evaluation baseline metric is EV travel-time improvement over fixed-time, greedy preemption, or the existing RHMCTS controller:
-
-```text
-improvement = (baseline_ev_travel_time - agent_ev_travel_time) / baseline_ev_travel_time
+```bash
+DYNAMIC_CORRIDOR_AGENT_MODE=heuristic uv run server --port 8000
+DYNAMIC_CORRIDOR_AGENT_MODE=meta_ppo uv run server --port 8000
 ```
 
 ## Running
 
 ```bash
-cd OpenEnv/envs/dynamic_corridor_env
+cd dynamic_corridor_env
 uv sync
+export HF_TOKEN=...
 uv run server --port 8000
 ```
 
@@ -85,60 +109,44 @@ The first reset generates `nets/pune-5/pune-5.net.xml` from the bundled SUMO nod
 ## Docker
 
 ```bash
-cd OpenEnv
-docker build -f envs/dynamic_corridor_env/server/Dockerfile -t dynamic-corridor-env:latest envs/dynamic_corridor_env
-docker run -p 8000:8000 dynamic-corridor-env:latest
+cd dynamic_corridor_env
+docker build -f server/Dockerfile -t dynamic-corridor-env:latest .
+docker run -p 8000:8000 -e HF_TOKEN=$HF_TOKEN dynamic-corridor-env:latest
 ```
 
-The Docker image installs SUMO from the Python `eclipse-sumo` wheel instead of Debian `apt`, then uses `traci` and `sumolib` from Python. It installs only the small `libexpat1` runtime library needed by the wheel-provided SUMO binaries.
+## Visualization
 
-If you want to call the API on host port `8001`, map it explicitly:
+The custom dashboard at `/viz` shows the 4x4 grid, EV marker, queue bars, route candidates, signal choices, reward feedback, and Traffic-R1 runtime metadata.
+
+Visit [http://localhost:8000/viz](http://localhost:8000/viz).
+
+## Evaluation
+
+The main metric is ambulance travel-time improvement under disaster incidents:
+
+```text
+improvement = (baseline_ev_travel_time - agent_ev_travel_time) / baseline_ev_travel_time
+```
+
+Recommended baselines are fixed-time, emergency-aware heuristic, peer-agent fallback, and Traffic-R1. Commit reward and travel-time plots from fixed seeds before final submission.
+
+Create the 50-run baseline reward dataset and graph images before reinforcement learning:
 
 ```bash
-docker run -p 8001:8000 dynamic-corridor-env:latest
-curl -X POST http://localhost:8001/reset \
-  -H "Content-Type: application/json" \
-  -d '{"task_id":"pune_5_default"}'
+uv run baseline-disaster --episodes 50 --seed-start 42 --mode heuristic --output-dir artifacts/baseline
 ```
 
-## Custom Simulation UI
+Outputs:
 
-The environment includes a custom browser dashboard at `/viz` for step-by-step visualization of EV movement, traffic conditions, and agent signal decisions.
+- `baseline_episodes.csv`: one row per seeded simulation.
+- `baseline_steps.csv`: per-step reward trace for every episode.
+- `baseline_summary.json`: aggregate reward, arrival, and travel-time stats.
+- `baseline_total_reward_curve.svg`, `baseline_mean_reward_curve.svg`, `baseline_reward_histogram.svg`, `baseline_travel_time_curve.svg`, and `baseline_mean_step_reward.svg`.
 
-Visit [http://localhost:8001/viz](http://localhost:8001/viz) in your browser.
-
-UI highlights:
-
-- Schematic corridor rendering for 3, 4, or 5 intersections.
-- EV marker, queue bars, and per-intersection phase state.
-- Controls: reset, step, auto step, pause.
-- Agent decision panel with chosen phase, EV target phase, and reward breakdown.
-- Timeline-ready snapshot history with slider and prev/next browsing.
-
-Notes:
-
-- This is a custom schematic visualizer, not SUMO's native map GUI.
-- If `/step` reports the episode is done, click reset before stepping again.
-
-## Configuration
-
-Environment variables:
-
-| Variable | Default |
-| --- | --- |
-| `DYNAMIC_CORRIDOR_NET_FILE` | `nets/pune-5/pune-5.net.xml` |
-| `DYNAMIC_CORRIDOR_ROUTE_FILE` | `nets/pune-5/pune-5.rou.xml` |
-| `DYNAMIC_CORRIDOR_DELTA_TIME` | `5` |
-| `DYNAMIC_CORRIDOR_MAX_SECONDS` | `900` |
-| `DYNAMIC_CORRIDOR_SEED` | `42` |
-| `SUMO_BINARY` | `sumo` |
-
-## Local Python SUMO Install
-
-SUMO's `traci` and `sumolib` packages are Python control libraries. To get the actual SUMO binaries from Python packaging, install `eclipse-sumo`:
+Run the bundled evaluation harness:
 
 ```bash
-uv pip install --find-links https://sumo.dlr.de/daily/wheels/ eclipse-sumo
+uv run evaluate-disaster --seeds 42,43,44 --modes heuristic,traffic_r1 --output-dir artifacts/evaluation
 ```
 
-The environment resolves `sumo` and `netconvert` through `sumolib.checkBinary()`.
+It writes `disaster_evaluation.csv`, `reward_plot.svg`, and `travel_time_plot.svg`. Traffic-R1 runs require `HF_TOKEN`; without it, the runtime reports fallback in `global_metrics.agent_runtime`.

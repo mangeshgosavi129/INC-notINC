@@ -56,23 +56,63 @@ def test_backtrack_candidate_is_flagged():
     assert reverse.is_backtrack is True
 
 
-def test_weight_only_reward_matches_active_route_edge_weights():
+def test_reward_reflects_ev_progress_and_traffic_impact():
     env = make_env()
     configure_without_sumo(env)
     env._active_route_edges = ["NW_OUT_TO_INT_1_1", "INT_1_1_TO_INT_1_2"]
-    w0 = env._road_weights.get("NW_OUT_TO_INT_1_1", 0.0)
-    w1 = env._road_weights.get("INT_1_1_TO_INT_1_2", 0.0)
-    mean = (w0 + w1) / 2.0
-    reward, feedback = env._compute_reward({})
-    assert abs(reward - (1.0 - mean)) < 1e-6
+    previous = {
+        **env._empty_metrics(),
+        "ev_progress": 0.20,
+        "total_queue": 4.0,
+        "phase_changes": 2,
+        "throughput": 1,
+    }
+    current = {
+        **env._empty_metrics(),
+        "ev_progress": 0.28,
+        "total_queue": 4.0,
+        "phase_changes": 2,
+        "throughput": 2,
+    }
+
+    reward, feedback = env._compute_reward({}, previous, current)
+
+    assert reward > 0.6
     assert 0.0 <= reward <= 1.0
     assert "mean_road_weight" in feedback
+    assert "progress_delta=0.0800" in feedback
+
+
+def test_arrival_reward_is_high_even_with_medium_route_weight():
+    env = make_env()
+    configure_without_sumo(env)
+    env._active_route_edges = ["NW_OUT_TO_INT_1_1", "INT_1_1_TO_INT_1_2"]
+    env._road_weights["NW_OUT_TO_INT_1_1"] = 0.5
+    env._road_weights["INT_1_1_TO_INT_1_2"] = 0.5
+    previous = {**env._empty_metrics(), "ev_progress": 0.92}
+    current = {**env._empty_metrics(), "ev_progress": 1.0, "ev_arrived": True}
+
+    reward, feedback = env._compute_reward({}, previous, current)
+
+    assert reward >= 0.9
+    assert "progress_delta" in feedback
 
 
 def test_invalid_route_choice_yields_zero_reward():
     env = make_env()
     configure_without_sumo(env)
     reward, _ = env._compute_reward({"invalid": True, "selected_edge": "bad_edge"})
+    assert reward == 0.0
+
+
+def test_invalid_signal_action_yields_zero_reward():
+    env = make_env()
+    configure_without_sumo(env)
+    previous = {**env._empty_metrics(), "ev_progress": 0.20}
+    current = {**env._empty_metrics(), "ev_progress": 0.28}
+
+    reward, _ = env._compute_reward({}, previous, current, invalid_actions=1)
+
     assert reward == 0.0
 
 

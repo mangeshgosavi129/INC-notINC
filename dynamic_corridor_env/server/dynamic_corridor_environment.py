@@ -19,7 +19,7 @@ from typing import Any
 from openenv.core.env_server.interfaces import Environment
 
 try:
-    from ..decentralized import AgentRuntime
+    from ..meta_agents import build_agent_runtime
     from ..models import (
         DynamicCorridorAction,
         DynamicCorridorObservation,
@@ -30,7 +30,7 @@ try:
         RouteChoiceObservation,
     )
 except ImportError:
-    from decentralized import AgentRuntime
+    from meta_agents import build_agent_runtime
     from models import (
         DynamicCorridorAction,
         DynamicCorridorObservation,
@@ -60,6 +60,34 @@ class RoadEdge:
     to_node: str
     speed_m_s: float
     length_m: float
+
+
+@dataclass(frozen=True)
+class DisasterIncident:
+    incident_id: str
+    kind: str
+    edge_id: str = ""
+    intersection_id: str = ""
+    start_step: int = 0
+    end_step: int = 0
+    severity: float = 0.0
+    description: str = ""
+
+    def active(self, step: int) -> bool:
+        return self.start_step <= step <= self.end_step
+
+    def as_dict(self, step: int) -> dict[str, Any]:
+        return {
+            "incident_id": self.incident_id,
+            "kind": self.kind,
+            "edge_id": self.edge_id,
+            "intersection_id": self.intersection_id,
+            "start_step": self.start_step,
+            "end_step": self.end_step,
+            "severity": round(self.severity, 3),
+            "active": self.active(step),
+            "description": self.description,
+        }
 
 
 GRID_TLS_IDS = tuple(f"INT_{row}_{col}" for row in range(1, 5) for col in range(1, 5))
@@ -176,11 +204,15 @@ class DynamicCorridorEnvironment(Environment):
         self._destination_id = "SE_OUT"
         self._episode_index = 0
         self._road_edges, self._node_xy, self._outgoing_edges = self._load_road_graph()
+        self._disaster_enabled = os.getenv("DYNAMIC_CORRIDOR_DISASTER_MODE", "1") != "0"
+        self._disaster_incidents: list[DisasterIncident] = []
+        self._hospital_deadline_step = 90
+        self._last_reward_breakdown: dict[str, float] = {}
         self._road_weights: dict[str, float] = {}
         self._active_route_edges: list[str] = list(self.scenario.ev_route_edges)
         self._pending_ev_route_edges: list[str] | None = None
         self._active_route_file: Path = self.route_file
-        self._agent_runtime = AgentRuntime(self.scenario.tls_ids)
+        self._agent_runtime = build_agent_runtime(self.scenario.tls_ids)
         self._lock = threading.RLock()
 
     def reset(
@@ -198,6 +230,8 @@ class DynamicCorridorEnvironment(Environment):
         source_id: str = "NW_OUT",
         destination_id: str = "SE_OUT",
     ) -> DynamicCorridorObservation:
+        if task_id == "pune_5_default":
+            task_id = self.scenario.task_id
         if task_id != self.scenario.task_id:
             raise ValueError(f"Unsupported task_id '{task_id}'. Expected '{self.scenario.task_id}'.")
         self._configure_route_choice(source_id, destination_id)
@@ -239,20 +273,17 @@ class DynamicCorridorEnvironment(Environment):
             return self._observe(0.0, "Episode already finished.")
 
         current_observation = self._observe(0.0, "Agent-routed step planning.")
-        agent_action = self._agent_runtime.step(current_observation)
-        agent_action.next_edge_id = action.next_edge_id
-        if action.reason:
-            agent_action.reason = f"{agent_action.reason} | client_reason={action.reason}"
+        action_used = self._resolve_step_action(current_observation, action)
 
-        route_feedback = self._apply_route_choice(agent_action)
-        invalid_actions = self._apply_action(agent_action)
+        route_feedback = self._apply_route_choice(action_used)
+        invalid_actions = self._apply_action(action_used)
         if route_feedback["invalid"]:
             invalid_actions += 1
         previous = self._last_metrics
         self._advance_sumo()
         current = self._collect_metrics()
 
-        raw_reward, feedback = self._compute_reward(route_feedback)
+        raw_reward, feedback = self._compute_reward(route_feedback, previous, current, invalid_actions)
         self._last_metrics = current
 
         self._done = bool(current["ev_arrived"] or current["sim_time"] >= self.scenario.max_sim_time_s)
@@ -265,6 +296,7 @@ class DynamicCorridorEnvironment(Environment):
         self._cumulative_reward += reward
         feedback += (
             f" raw_reward={raw_reward:.3f} normalized_reward={reward:.3f} "
+            f"action_source={'client' if self._client_supplied_action(action) else 'traffic_r1'} "
             f"active_agent={self._agent_runtime.state().get('active_agent_id', '') or '-'} "
             f"touched_agents={len(self._agent_runtime.state().get('last_touched_agent_ids', []))}"
         )
@@ -272,6 +304,19 @@ class DynamicCorridorEnvironment(Environment):
         self._state.step_count += 1
         self._sync_state(current)
         return self._observe(round(reward, 3), feedback)
+
+    @staticmethod
+    def _client_supplied_action(action: DynamicCorridorAction) -> bool:
+        return bool(action.phase_by_intersection) or action.next_edge_id is not None
+
+    def _resolve_step_action(
+        self,
+        observation: DynamicCorridorObservation,
+        action: DynamicCorridorAction,
+    ) -> DynamicCorridorAction:
+        if self._client_supplied_action(action):
+            return action
+        return self._agent_runtime.step(observation)
 
     @property
     def state(self) -> DynamicCorridorState:
@@ -327,6 +372,8 @@ class DynamicCorridorEnvironment(Environment):
         self._source_id = source_id
         self._destination_id = destination_id
         self._episode_index += 1
+        self._disaster_incidents = self._generate_disaster_incidents(self.seed, self._episode_index)
+        self._hospital_deadline_step = self._generate_hospital_deadline(self.seed, self._episode_index)
         self._road_weights = self._generate_road_weights(self.seed, self._episode_index)
         route = self._shortest_path_edges(source_id, destination_id)
         if not route:
@@ -341,6 +388,69 @@ class DynamicCorridorEnvironment(Environment):
             edge_id: round(rng.random(), 6)
             for edge_id in sorted(self._road_edges)
         }
+
+    def _generate_disaster_incidents(self, seed: int, episode_index: int) -> list[DisasterIncident]:
+        if not self._disaster_enabled:
+            return []
+
+        rng = random.Random(f"disaster:{seed}:{episode_index}:{self._source_id}:{self._destination_id}")
+        middle_route_edges = [
+            edge_id for edge_id in self.scenario.ev_route_edges[2:-1]
+            if edge_id in self._road_edges
+        ]
+        internal_edges = [
+            edge_id for edge_id, edge in sorted(self._road_edges.items())
+            if edge.from_node in self._node_xy
+            and edge.to_node in self._node_xy
+            and edge.from_node not in {self._source_id, self._destination_id}
+            and edge.to_node not in {self._source_id, self._destination_id}
+        ]
+        tls_ids = list(self.scenario.tls_ids)
+
+        blocked_edge = rng.choice(middle_route_edges or internal_edges)
+        degraded_edges = rng.sample(internal_edges, k=min(2, len(internal_edges)))
+        surge_tls = rng.sample(tls_ids, k=min(2, len(tls_ids)))
+
+        incidents = [
+            DisasterIncident(
+                incident_id="road_closure_1",
+                kind="blocked_edge",
+                edge_id=blocked_edge,
+                start_step=2,
+                end_step=28,
+                severity=1.0,
+                description="Debris and response vehicles block an arterial segment.",
+            )
+        ]
+        for idx, edge_id in enumerate(degraded_edges, start=1):
+            incidents.append(
+                DisasterIncident(
+                    incident_id=f"speed_degradation_{idx}",
+                    kind="degraded_edge",
+                    edge_id=edge_id,
+                    start_step=0,
+                    end_step=70,
+                    severity=round(rng.uniform(0.35, 0.65), 3),
+                    description="Rain, crowding, and spillback reduce safe speed.",
+                )
+            )
+        for idx, tls_id in enumerate(surge_tls, start=1):
+            incidents.append(
+                DisasterIncident(
+                    incident_id=f"demand_surge_{idx}",
+                    kind="demand_surge",
+                    intersection_id=tls_id,
+                    start_step=rng.randint(0, 8),
+                    end_step=rng.randint(35, 75),
+                    severity=round(rng.uniform(0.35, 0.85), 3),
+                    description="Evacuation traffic creates temporary queue pressure.",
+                )
+            )
+        return incidents
+
+    def _generate_hospital_deadline(self, seed: int, episode_index: int) -> int:
+        rng = random.Random(f"hospital:{seed}:{episode_index}:{self._source_id}:{self._destination_id}")
+        return rng.randint(45, 75)
 
     def _write_episode_route_file(self, ev_route_edges: list[str]) -> Path:
         root = ET.parse(self.route_file).getroot()
@@ -366,8 +476,68 @@ class DynamicCorridorEnvironment(Environment):
     def _edge_cost(self, edge_id: str, include_live_queue: bool = False) -> float:
         edge = self._road_edges[edge_id]
         weight = self._road_weights.get(edge_id, 0.0)
+        if self._edge_blocked(edge_id):
+            return 1_000_000.0
+        speed_multiplier = max(0.25, 1.0 - self._edge_degradation(edge_id))
         queue_cost = self._edge_queue(edge_id) if include_live_queue else 0.0
-        return edge.length_m * (1.0 + weight) + queue_cost * 25.0
+        return edge.length_m * (1.0 + weight) / speed_multiplier + queue_cost * 25.0
+
+    def _active_disaster_incidents(self) -> list[DisasterIncident]:
+        step = self._state.step_count
+        return [incident for incident in self._disaster_incidents if incident.active(step)]
+
+    def _edge_blocked(self, edge_id: str) -> bool:
+        return any(
+            incident.kind == "blocked_edge" and incident.edge_id == edge_id
+            for incident in self._active_disaster_incidents()
+        )
+
+    def _edge_degradation(self, edge_id: str) -> float:
+        return min(
+            0.75,
+            sum(
+                incident.severity
+                for incident in self._active_disaster_incidents()
+                if incident.kind == "degraded_edge" and incident.edge_id == edge_id
+            ),
+        )
+
+    def _intersection_surge(self, intersection_id: str) -> float:
+        return sum(
+            incident.severity * 10.0
+            for incident in self._active_disaster_incidents()
+            if incident.kind == "demand_surge" and incident.intersection_id == intersection_id
+        )
+
+    def _edge_surge(self, edge_id: str) -> float:
+        intersection_id = self.scenario.edge_to_intersection.get(edge_id, "")
+        return self._intersection_surge(intersection_id) if intersection_id else 0.0
+
+    def _disaster_context(self) -> dict[str, Any]:
+        step = self._state.step_count
+        active = self._active_disaster_incidents()
+        blocked = [incident.edge_id for incident in active if incident.kind == "blocked_edge"]
+        degraded = {
+            incident.edge_id: round(incident.severity, 3)
+            for incident in active
+            if incident.kind == "degraded_edge"
+        }
+        surges = {
+            incident.intersection_id: round(incident.severity, 3)
+            for incident in active
+            if incident.kind == "demand_surge"
+        }
+        return {
+            "enabled": self._disaster_enabled,
+            "episode_index": self._episode_index,
+            "hospital_destination": self._destination_id,
+            "hospital_deadline_step": self._hospital_deadline_step,
+            "deadline_steps_remaining": max(0, self._hospital_deadline_step - step),
+            "blocked_edges": blocked,
+            "degraded_edges": degraded,
+            "demand_surge_intersections": surges,
+            "incidents": [incident.as_dict(step) for incident in self._disaster_incidents],
+        }
 
     def _shortest_path_edges(self, source_id: str, destination_id: str) -> list[str] | None:
         if source_id == destination_id:
@@ -420,6 +590,8 @@ class DynamicCorridorEnvironment(Environment):
             edge = self._road_edges[edge_id]
             next_distance = self._destination_distance(edge.to_node)
             tail = self._shortest_path_edges(edge.to_node, self._destination_id)
+            blocked = self._edge_blocked(edge_id)
+            degradation = self._edge_degradation(edge_id)
             is_backtrack = bool(
                 previous_edge
                 and previous_edge.from_node == edge.to_node
@@ -431,14 +603,14 @@ class DynamicCorridorEnvironment(Environment):
                     edge_id=edge.edge_id,
                     from_node=edge.from_node,
                     to_node=edge.to_node,
-                    road_weight=self._road_weights.get(edge_id, 0.0),
+                    road_weight=min(1.0, self._road_weights.get(edge_id, 0.0) + (0.45 if blocked else degradation * 0.35)),
                     estimated_queue=self._edge_queue(edge_id),
                     length_m=round(edge.length_m, 3),
-                    speed_m_s=edge.speed_m_s,
+                    speed_m_s=round(edge.speed_m_s * max(0.25, 1.0 - degradation), 3),
                     destination_distance_delta=round(delta, 3),
                     moves_closer=delta > 0.0,
                     is_backtrack=is_backtrack,
-                    destination_reachable=tail is not None,
+                    destination_reachable=(not blocked) and tail is not None,
                 )
             )
         return candidates
@@ -665,22 +837,112 @@ class DynamicCorridorEnvironment(Environment):
         weights = [float(self._road_weights.get(eid, 0.0)) for eid in self._active_route_edges]
         return sum(weights) / max(1, len(weights))
 
-    def _compute_reward(self, route_feedback: dict[str, Any] | None) -> tuple[float, str]:
-        """
-        v2 reward: in [0,1], depends only on per-edge road weights (seeding + active route);
-        not on queues, EV wait, or signal phases. Lower mean road weight (lighter edges) is better.
-        """
+    def _compute_reward(
+        self,
+        route_feedback: dict[str, Any] | None,
+        previous: dict[str, Any] | None = None,
+        current: dict[str, Any] | None = None,
+        invalid_actions: int = 0,
+    ) -> tuple[float, str]:
+        """Reward fast EV progress and arrival while penalizing traffic disruption."""
         route_feedback = route_feedback or {}
+        previous = previous or self._last_metrics or self._empty_metrics()
+        current = current or self._last_metrics or self._empty_metrics()
         mean_w = self._mean_active_route_road_weight()
-        if route_feedback.get("invalid"):
+        progress_delta = max(0.0, float(current.get("ev_progress", 0.0)) - float(previous.get("ev_progress", 0.0)))
+        queue_now = max(0.0, float(current.get("total_queue", 0.0)))
+        queue_prev = max(0.0, float(previous.get("total_queue", 0.0)))
+        wait_delta = max(
+            0.0,
+            float(current.get("ev_waiting_time", 0.0)) - float(previous.get("ev_waiting_time", 0.0)),
+        )
+        phase_delta = max(
+            0.0,
+            float(current.get("phase_changes", 0.0)) - float(previous.get("phase_changes", 0.0)),
+        )
+        throughput_delta = max(
+            0.0,
+            float(current.get("throughput", 0.0)) - float(previous.get("throughput", 0.0)),
+        )
+        blocked_route_edges = [edge_id for edge_id in self._active_route_edges if self._edge_blocked(edge_id)]
+        missed_deadline = bool(current.get("ev_arrived")) and self._state.step_count > self._hospital_deadline_step
+        route_penalty = 0.0
+        queue_penalty = 0.0
+        wait_penalty = 0.0
+        phase_penalty = 0.0
+        deadline_penalty = 0.0
+        progress_score = 0.0
+        route_score = 0.0
+        traffic_score = 0.0
+        throughput_score = 0.0
+        if route_feedback.get("invalid") or invalid_actions > 0:
             raw = 0.0
         else:
-            raw = 1.0 - mean_w
+            progress_score = min(1.0, progress_delta / 0.08)
+            route_score = 1.0 - mean_w
+
+            queue_capacity = max(1.0, len(self.scenario.tls_ids) * 8.0)
+            queue_ratio = min(1.0, queue_now / queue_capacity)
+            traffic_score = 1.0 - queue_ratio
+            queue_penalty = min(1.0, max(0.0, queue_now - queue_prev) / max(1.0, len(self.scenario.tls_ids) * 4.0)) * 0.15
+
+            wait_penalty = min(1.0, wait_delta / max(1.0, float(self.scenario.delta_time_s))) * 0.20
+
+            phase_ratio = min(1.0, phase_delta / max(1.0, len(self.scenario.tls_ids)))
+            phase_penalty = phase_ratio * 0.20
+
+            throughput_score = min(1.0, throughput_delta / 4.0)
+
+            if route_feedback.get("is_backtrack"):
+                route_penalty += 0.10
+            if route_feedback.get("selected_edge") and not route_feedback.get("moves_closer", True):
+                route_penalty += 0.08
+            if route_feedback.get("selected_edge") and self._edge_blocked(str(route_feedback.get("selected_edge"))):
+                route_penalty += 0.25
+            if blocked_route_edges:
+                route_penalty += min(0.25, 0.08 * len(blocked_route_edges))
+            deadline_penalty = 0.08 if missed_deadline else 0.0
+
+            raw = (
+                0.45 * progress_score
+                + 0.20 * route_score
+                + 0.25 * traffic_score
+                + 0.10 * throughput_score
+                - queue_penalty
+                - wait_penalty
+                - phase_penalty
+                - route_penalty
+                - deadline_penalty
+            )
+            if current.get("ev_arrived"):
+                terminal_penalty = min(0.20, queue_ratio * 0.08 + phase_ratio * 0.07 + min(1.0, wait_delta / 10.0) * 0.10)
+                raw = max(raw, 0.90 + 0.10 * route_score - terminal_penalty - deadline_penalty)
         raw = max(0.0, min(1.0, float(raw)))
+        self._last_reward_breakdown = {
+            "progress_score": round(progress_score, 4),
+            "route_score": round(route_score, 4),
+            "traffic_score": round(traffic_score, 4),
+            "throughput_score": round(throughput_score, 4),
+            "queue_growth_penalty": round(queue_penalty, 4),
+            "ev_wait_penalty": round(wait_penalty, 4),
+            "phase_change_penalty": round(phase_penalty, 4),
+            "disaster_route_penalty": round(route_penalty, 4),
+            "hospital_deadline_penalty": round(deadline_penalty, 4),
+            "invalid_action_penalty": 1.0 if route_feedback.get("invalid") or invalid_actions > 0 else 0.0,
+            "raw_reward": round(raw, 4),
+        }
         feedback = (
-            f"weight_only mean_road_weight={mean_w:.4f} reward={raw:.4f} "
+            f"progress_delta={progress_delta:.4f} "
+            f"mean_road_weight={mean_w:.4f} queue={float(current.get('total_queue', 0.0)):.1f} "
+            f"queue_delta={max(0.0, queue_now - queue_prev):.1f} "
+            f"ev_wait_delta={wait_delta:.1f} "
+            f"throughput_delta={throughput_delta:.1f} "
+            f"invalid_actions={invalid_actions} reward={raw:.4f} "
             f"route_invalid={int(bool(route_feedback.get('invalid')))} "
-            f"route_edge={route_feedback.get('selected_edge', '') or '-'}"
+            f"route_edge={route_feedback.get('selected_edge', '') or '-'} "
+            f"route_backtrack={int(bool(route_feedback.get('is_backtrack')))} "
+            f"blocked_route_edges={len(blocked_route_edges)} "
+            f"hospital_deadline_remaining={max(0, self._hospital_deadline_step - self._state.step_count)}"
         )
         return raw, feedback
 
@@ -705,6 +967,7 @@ class DynamicCorridorEnvironment(Environment):
                 if count > 0:
                     total_speed += mean_speed
                     speed_count += 1
+            tls_queue += self._intersection_surge(tls_id)
             total_queue += tls_queue
             max_queue = max(max_queue, tls_queue)
 
@@ -744,6 +1007,8 @@ class DynamicCorridorEnvironment(Environment):
                 "throughput": metrics["throughput"],
                 "phase_changes": metrics["phase_changes"],
                 "agent_runtime": self._agent_runtime.state(),
+                "disaster_context": self._disaster_context(),
+                "reward_breakdown": dict(self._last_reward_breakdown),
             },
             reward=reward,
             done=self._done,
@@ -766,6 +1031,7 @@ class DynamicCorridorEnvironment(Environment):
     def _intersection_observation(self, tls_id: str) -> IntersectionObservation:
         lanes = set(self._traci.trafficlight.getControlledLanes(tls_id))
         queue = sum(self._traci.lane.getLastStepHaltingNumber(lane_id) for lane_id in lanes)
+        queue += self._intersection_surge(tls_id)
         vehicle_count = sum(self._traci.lane.getLastStepVehicleNumber(lane_id) for lane_id in lanes)
         speeds = [
             self._traci.lane.getLastStepMeanSpeed(lane_id)
@@ -786,6 +1052,7 @@ class DynamicCorridorEnvironment(Environment):
             is_on_ev_route=bool(ev_edge),
             ev_approach_edge=ev_edge,
             ev_target_phase=self._ev_target_phase(tls_id, ev_edge),
+            signal_state_by_edge=self._signal_state_by_edge(tls_id),
             ev_eta_steps=ev_eta_steps,
             ev_distance_m=ev_distance_m,
         )
@@ -831,7 +1098,8 @@ class DynamicCorridorEnvironment(Environment):
         controlled_lanes = self._traci.trafficlight.getControlledLanes(tls_id)
         program = self._traci.trafficlight.getAllProgramLogics(tls_id)[0]
         queues: dict[int, float] = {}
-        for idx in self._valid_green_phases(tls_id):
+        valid_phases = self._valid_green_phases(tls_id)
+        for idx in valid_phases:
             phase = program.phases[idx]
             phase_lanes = {
                 lane_id
@@ -841,6 +1109,10 @@ class DynamicCorridorEnvironment(Environment):
             queues[idx] = float(
                 sum(self._traci.lane.getLastStepHaltingNumber(lane_id) for lane_id in phase_lanes)
             )
+        surge = self._intersection_surge(tls_id)
+        if surge and valid_phases:
+            pressure_phase = max(valid_phases, key=lambda phase: queues.get(phase, 0.0))
+            queues[pressure_phase] = queues.get(pressure_phase, 0.0) + surge
         return queues
 
     def _ev_target_phase(self, tls_id: str, ev_edge: str) -> int | None:
@@ -857,6 +1129,31 @@ class DynamicCorridorEnvironment(Environment):
                 if lane_id in ev_lanes and link_idx < len(phase.state) and phase.state[link_idx] in {"G", "g"}:
                     return idx
         return None
+
+    def _signal_state_by_edge(self, tls_id: str) -> dict[str, str]:
+        controlled_lanes = self._traci.trafficlight.getControlledLanes(tls_id)
+        program = self._traci.trafficlight.getAllProgramLogics(tls_id)[0]
+        current_phase = self._traci.trafficlight.getPhase(tls_id)
+        if current_phase < 0 or current_phase >= len(program.phases):
+            return {}
+
+        phase_state = program.phases[current_phase].state
+        states: dict[str, str] = {}
+        rank = {"red": 0, "yellow": 1, "green": 2}
+        for link_idx, lane_id in enumerate(controlled_lanes):
+            edge_id = lane_id.rsplit("_", 1)[0]
+            if not edge_id or link_idx >= len(phase_state):
+                continue
+            char = phase_state[link_idx]
+            if char in {"G", "g"}:
+                state = "green"
+            elif char in {"y", "Y"}:
+                state = "yellow"
+            else:
+                state = "red"
+            if edge_id not in states or rank[state] > rank[states[edge_id]]:
+                states[edge_id] = state
+        return states
 
     def _ev_approach_edge_for(self, tls_id: str) -> str:
         active_route = list(self._active_route_edges)
@@ -940,7 +1237,7 @@ class DynamicCorridorEnvironment(Environment):
 
     def _edge_queue(self, edge_id: str) -> float:
         if self._traci is None:
-            return 0.0
+            return self._edge_surge(edge_id)
         queue = 0.0
         try:
             lane_count = int(self._traci.edge.getLaneNumber(edge_id))
@@ -951,7 +1248,7 @@ class DynamicCorridorEnvironment(Environment):
                 queue += float(self._traci.lane.getLastStepHaltingNumber(f"{edge_id}_{idx}"))
             except Exception:
                 continue
-        return queue
+        return queue + self._edge_surge(edge_id)
 
     def _next_ev_intersection(self) -> str:
         if not self._vehicle_exists(self.scenario.ev_id):

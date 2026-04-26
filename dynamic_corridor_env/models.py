@@ -45,6 +45,10 @@ class IntersectionObservation(Observation):
     is_on_ev_route: bool = Field(False, description="Whether this intersection is on the ambulance route.")
     ev_approach_edge: str = Field("", description="Edge used by the ambulance to enter this intersection.")
     ev_target_phase: int | None = Field(None, description="Green phase that serves the ambulance approach.")
+    signal_state_by_edge: dict[str, str] = Field(
+        default_factory=dict,
+        description="Current signal state for each incoming approach edge: green, yellow, or red.",
+    )
     ev_eta_steps: float = Field(
         -1.0,
         description="Estimated decision steps until the ambulance reaches this intersection, or -1 if unavailable.",
@@ -112,7 +116,7 @@ class DynamicCorridorObservation(Observation):
     ev: EVObservation = Field(default_factory=EVObservation)
     route_choice: RouteChoiceObservation = Field(default_factory=RouteChoiceObservation)
     global_metrics: dict[str, Any] = Field(default_factory=dict)
-    reward: float = Field(0.0, description="Reward from the previous action, in [0, 1] (weight-based v2).")
+    reward: float = Field(0.0, description="Reward from the previous action, in [0, 1].")
     done: bool = Field(False, description="Whether the episode has ended.")
     feedback: str = Field("", description="Human-readable summary of the last transition.")
 
