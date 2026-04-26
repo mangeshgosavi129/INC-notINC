@@ -20,6 +20,11 @@ from .policies import (
 )
 from .ppo import PpoPolicy, train
 from .route_ppo import RoutePpoPolicy
+from .rubrics import (
+    TerminalEVCorridorRubric,
+    TrajectoryEVArrivalRubric,
+    resolve_rubric_from_env,
+)
 
 __all__ = [
     "ActuatedPolicy",
@@ -42,5 +47,8 @@ __all__ = [
     "RouteCandidateObservation",
     "RouteChoiceObservation",
     "RoutePpoPolicy",
+    "TerminalEVCorridorRubric",
+    "TrajectoryEVArrivalRubric",
+    "resolve_rubric_from_env",
     "train",
 ]

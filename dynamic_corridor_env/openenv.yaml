@@ -4,8 +4,8 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
-description: SUMO-backed emergency vehicle dynamic corridor clearing environment
+description: SUMO-backed emergency vehicle dynamic corridor clearing (Pune-style 4×4 signal grid, bundled as pune-5 net)
 tasks:
-  - id: pune_5_default
+  - id: grid_4x4_default
     difficulty: medium
-    description: 5-intersection Pune corridor slice with background traffic and one ambulance
+    description: 4×4 signalized grid corridor (16 intersections) with background traffic, one ambulance, and seeded per-edge weights for routing

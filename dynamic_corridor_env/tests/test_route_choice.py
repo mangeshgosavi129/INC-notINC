@@ -58,30 +58,44 @@ def test_backtrack_candidate_is_flagged():
 
 def test_weight_only_reward_matches_active_route_edge_weights():
     env = make_env()
+    env._reward_mode = "route_weights"
     configure_without_sumo(env)
     env._active_route_edges = ["NW_OUT_TO_INT_1_1", "INT_1_1_TO_INT_1_2"]
     w0 = env._road_weights.get("NW_OUT_TO_INT_1_1", 0.0)
     w1 = env._road_weights.get("INT_1_1_TO_INT_1_2", 0.0)
     mean = (w0 + w1) / 2.0
-    reward, feedback = env._compute_reward({})
+    prev = env._empty_metrics()
+    curr = env._empty_metrics()
+    reward, feedback = env._compute_reward(prev, curr, 0, {})
     assert abs(reward - (1.0 - mean)) < 1e-6
     assert 0.0 <= reward <= 1.0
     assert "mean_road_weight" in feedback
 
 
-def test_invalid_route_choice_yields_zero_reward():
+def test_invalid_route_choice_yields_zero_reward_route_weights_mode():
     env = make_env()
+    env._reward_mode = "route_weights"
     configure_without_sumo(env)
-    reward, _ = env._compute_reward({"invalid": True, "selected_edge": "bad_edge"})
+    prev = env._empty_metrics()
+    curr = env._empty_metrics()
+    reward, _ = env._compute_reward(prev, curr, 0, {"invalid": True, "selected_edge": "bad_edge"})
     assert reward == 0.0
 
 
-def test_reward_clamps_to_unit_interval():
+def test_reward_clamps_clearing_mode_default():
     env = make_env()
 
-    assert env._normalize_reward(-500.0) == 0.0
-    assert env._normalize_reward(500.0) == 1.0
+    assert env._normalize_reward(-500.0) == -10.0
+    assert env._normalize_reward(500.0) == 10.0
     assert env._normalize_reward(0.42) == 0.42
+
+
+def test_reward_clamps_route_weights_mode():
+    env = make_env()
+    env._reward_mode = "route_weights"
+    assert env._normalize_reward(-0.5) == 0.0
+    assert env._normalize_reward(2.0) == 1.0
+    assert env._normalize_reward(0.25) == 0.25
 
 
 def test_configurable_endpoint_route_defaults_without_starting_sumo():

@@ -25,6 +25,7 @@ def _build_dynamic_corridor_environment() -> DynamicCorridorEnvironment:
         delta_time_s=int(os.getenv("DYNAMIC_CORRIDOR_DELTA_TIME", "5")),
         max_sim_time_s=int(os.getenv("DYNAMIC_CORRIDOR_MAX_SECONDS", "900")),
         seed=int(os.getenv("DYNAMIC_CORRIDOR_SEED", "42")),
+        reward_mode=os.getenv("DYNAMIC_CORRIDOR_REWARD_MODE"),
     )
 
 

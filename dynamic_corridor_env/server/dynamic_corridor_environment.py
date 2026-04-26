@@ -14,11 +14,15 @@ import heapq
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from openenv.core.env_server.interfaces import Environment
+from openenv.core.rubrics.base import Rubric
+
+RewardMode = Literal["clearing", "route_weights"]
 
 try:
+    from ..rubrics import resolve_rubric_from_env
     from ..decentralized import AgentRuntime
     from ..models import (
         DynamicCorridorAction,
@@ -30,6 +34,7 @@ try:
         RouteChoiceObservation,
     )
 except ImportError:
+    from rubrics import resolve_rubric_from_env
     from decentralized import AgentRuntime
     from models import (
         DynamicCorridorAction,
@@ -125,8 +130,6 @@ class DynamicCorridorEnvironment(Environment):
     """Central-agent SUMO environment for emergency green-corridor learning."""
 
     SUPPORTS_CONCURRENT_SESSIONS: bool = False
-    REWARD_MIN: float = 0.0
-    REWARD_MAX: float = 1.0
 
     def __init__(
         self,
@@ -136,7 +139,10 @@ class DynamicCorridorEnvironment(Environment):
         delta_time_s: int | None = None,
         max_sim_time_s: int | None = None,
         seed: int | None = None,
+        reward_mode: RewardMode | str | None = None,
+        rubric: Rubric | None = None,
     ):
+        super().__init__(transform=None, rubric=None)
         self.scenario = DEFAULT_SCENARIO
         self.env_dir = Path(__file__).resolve().parent.parent
         self.net_file = Path(net_file or os.getenv(
@@ -160,6 +166,19 @@ class DynamicCorridorEnvironment(Environment):
             delta_time_s=int(delta_time_s or os.getenv("DYNAMIC_CORRIDOR_DELTA_TIME", self.scenario.delta_time_s)),
         )
         self.seed = int(seed if seed is not None else os.getenv("DYNAMIC_CORRIDOR_SEED", "42"))
+        _mode = (reward_mode or os.getenv("DYNAMIC_CORRIDOR_REWARD_MODE", "clearing")).strip().lower()
+        if _mode not in ("clearing", "route_weights"):
+            raise ValueError(
+                f"Invalid DYNAMIC_CORRIDOR_REWARD_MODE or reward_mode={_mode!r}; "
+                "use 'clearing' or 'route_weights'."
+            )
+        self._reward_mode: RewardMode = _mode  # type: ignore[assignment]
+
+        self.rubric = (
+            rubric
+            if rubric is not None
+            else resolve_rubric_from_env(os.getenv("DYNAMIC_CORRIDOR_RUBRIC"), self.scenario.max_sim_time_s)
+        )
 
         self._traci = None
         self._label = f"dynamic_corridor_{uuid.uuid4().hex}"
@@ -182,24 +201,46 @@ class DynamicCorridorEnvironment(Environment):
         self._active_route_file: Path = self.route_file
         self._agent_runtime = AgentRuntime(self.scenario.tls_ids)
         self._lock = threading.RLock()
+        self._invalid_actions_episode = 0
+
+    def _reward_bounds(self) -> tuple[float, float]:
+        if self._reward_mode == "route_weights":
+            return (0.0, 1.0)
+        return (-10.0, 10.0)
 
     def reset(
         self,
-        task_id: str = "grid_4x4_default",
-        source_id: str = "NW_OUT",
-        destination_id: str = "SE_OUT",
+        seed: int | None = None,
+        episode_id: str | None = None,
+        **kwargs: Any,
     ) -> DynamicCorridorObservation:
+        """OpenEnv-compatible reset; pass task_id, source_id, destination_id via kwargs."""
+        task_id = str(kwargs.get("task_id", self.scenario.task_id))
+        source_id = str(kwargs.get("source_id", "NW_OUT"))
+        destination_id = str(kwargs.get("destination_id", "SE_OUT"))
         with self._lock:
-            return self._reset_unlocked(task_id, source_id, destination_id)
+            return self._reset_unlocked(
+                task_id,
+                source_id,
+                destination_id,
+                seed=seed,
+                episode_id=episode_id,
+            )
 
     def _reset_unlocked(
         self,
         task_id: str = "grid_4x4_default",
         source_id: str = "NW_OUT",
         destination_id: str = "SE_OUT",
+        seed: int | None = None,
+        episode_id: str | None = None,
     ) -> DynamicCorridorObservation:
         if task_id != self.scenario.task_id:
             raise ValueError(f"Unsupported task_id '{task_id}'. Expected '{self.scenario.task_id}'.")
+        self._reset_rubric()
+        if seed is not None:
+            self.seed = int(seed)
+        self._invalid_actions_episode = 0
         self._configure_route_choice(source_id, destination_id)
 
         self._ensure_net_file()
@@ -214,13 +255,23 @@ class DynamicCorridorEnvironment(Environment):
             tls_id: 0 for tls_id in self.scenario.tls_ids
         }
         self._last_metrics = self._collect_metrics()
+        ep_id = episode_id if episode_id else str(uuid.uuid4())
+        n_tls = max(1, len(self.scenario.tls_ids))
+        mean_q = float(self._last_metrics["total_queue"]) / n_tls
         self._state = DynamicCorridorState(
-            episode_id=str(uuid.uuid4()),
+            episode_id=ep_id,
             task_id=task_id,
             step_count=0,
             sim_time=0.0,
             cumulative_reward=0.0,
             done=False,
+            reward_mode=self._reward_mode,
+            invalid_action_count_episode=0,
+            mean_corridor_queue=round(mean_q, 3),
+            ev_clearing_success=bool(self._last_metrics.get("ev_arrived")),
+            episode_timeout=False,
+            episode_seed=int(self.seed),
+            last_rubric_score=None,
         )
         observation = self._observe(0.0, "Episode started.")
         self._agent_runtime.reset(observation)
@@ -252,14 +303,23 @@ class DynamicCorridorEnvironment(Environment):
         self._advance_sumo()
         current = self._collect_metrics()
 
-        raw_reward, feedback = self._compute_reward(route_feedback)
+        raw_reward, feedback = self._compute_reward(previous, current, invalid_actions, route_feedback)
         self._last_metrics = current
+        self._invalid_actions_episode += int(invalid_actions)
 
         self._done = bool(current["ev_arrived"] or current["sim_time"] >= self.scenario.max_sim_time_s)
-        if self._done and current["ev_arrived"]:
-            feedback += " | ambulance arrived"
-        elif self._done:
-            feedback += " | timeout before ambulance arrival"
+        if self._reward_mode == "clearing":
+            if self._done and current["ev_arrived"]:
+                raw_reward += max(0.0, 500.0 - current["ev_travel_time"])
+                feedback += " | ambulance arrived"
+            elif self._done:
+                raw_reward -= 500.0
+                feedback += " | timeout before ambulance arrival"
+        else:
+            if self._done and current["ev_arrived"]:
+                feedback += " | ambulance arrived"
+            elif self._done:
+                feedback += " | timeout before ambulance arrival"
 
         reward = self._normalize_reward(raw_reward)
         self._cumulative_reward += reward
@@ -271,7 +331,18 @@ class DynamicCorridorEnvironment(Environment):
 
         self._state.step_count += 1
         self._sync_state(current)
-        return self._observe(round(reward, 3), feedback)
+        observation = self._observe(round(reward, 3), feedback)
+        if self.rubric is not None:
+            rubric_score = float(self._apply_rubric(action, observation))
+            observation.metadata["rubric_score"] = rubric_score
+            observation.global_metrics["rubric_score"] = rubric_score
+            for path, child in self.rubric.named_rubrics():
+                if child.last_score is not None:
+                    observation.metadata.setdefault("rubric_scores", {})[path] = child.last_score
+            self._state.last_rubric_score = rubric_score
+        else:
+            self._state.last_rubric_score = None
+        return observation
 
     @property
     def state(self) -> DynamicCorridorState:
@@ -665,12 +736,20 @@ class DynamicCorridorEnvironment(Environment):
         weights = [float(self._road_weights.get(eid, 0.0)) for eid in self._active_route_edges]
         return sum(weights) / max(1, len(weights))
 
-    def _compute_reward(self, route_feedback: dict[str, Any] | None) -> tuple[float, str]:
-        """
-        v2 reward: in [0,1], depends only on per-edge road weights (seeding + active route);
-        not on queues, EV wait, or signal phases. Lower mean road weight (lighter edges) is better.
-        """
+    def _compute_reward(
+        self,
+        previous: dict[str, Any],
+        current: dict[str, Any],
+        invalid_actions: int,
+        route_feedback: dict[str, Any] | None,
+    ) -> tuple[float, str]:
         route_feedback = route_feedback or {}
+        if self._reward_mode == "route_weights":
+            return self._compute_reward_route_weights(route_feedback)
+        return self._compute_reward_clearing(previous, current, invalid_actions, route_feedback)
+
+    def _compute_reward_route_weights(self, route_feedback: dict[str, Any]) -> tuple[float, str]:
+        """[0,1] reward from mean seeded edge weight on the active route only; invalid route -> 0."""
         mean_w = self._mean_active_route_road_weight()
         if route_feedback.get("invalid"):
             raw = 0.0
@@ -678,14 +757,60 @@ class DynamicCorridorEnvironment(Environment):
             raw = 1.0 - mean_w
         raw = max(0.0, min(1.0, float(raw)))
         feedback = (
-            f"weight_only mean_road_weight={mean_w:.4f} reward={raw:.4f} "
+            f"reward_mode=route_weights mean_road_weight={mean_w:.4f} reward={raw:.4f} "
             f"route_invalid={int(bool(route_feedback.get('invalid')))} "
             f"route_edge={route_feedback.get('selected_edge', '') or '-'}"
         )
         return raw, feedback
 
+    def _compute_reward_clearing(
+        self,
+        previous: dict[str, Any],
+        current: dict[str, Any],
+        invalid_actions: int,
+        route_feedback: dict[str, Any],
+    ) -> tuple[float, str]:
+        """Default corridor-clearing shaped reward; normalized to ~[-10, 10] after terminal terms in step()."""
+        ev_progress_delta = current["ev_progress"] - previous["ev_progress"]
+        ev_wait_delta = current["ev_waiting_time"] - previous["ev_waiting_time"]
+        throughput_delta = current["throughput"] - previous["throughput"]
+        phase_delta = current["phase_changes"] - previous["phase_changes"]
+        queue_overflow = max(0.0, current["max_queue"] - 50.0)
+        route_delta = float(route_feedback.get("destination_distance_delta", 0.0))
+        route_reward = 0.05 * route_delta
+        route_reward -= 10.0 * float(route_feedback.get("road_weight", 0.0))
+        route_reward -= 0.25 * float(route_feedback.get("estimated_queue", 0.0))
+        if route_feedback.get("is_backtrack"):
+            route_reward -= 75.0
+        if route_feedback.get("selected_edge") and not route_feedback.get("moves_closer", False):
+            route_reward -= 25.0
+        if route_feedback.get("invalid"):
+            route_reward -= 50.0
+
+        reward = (
+            20.0 * ev_progress_delta
+            - 100.0 * ev_wait_delta
+            - 1.0 * current["total_queue"]
+            - 2.0 * queue_overflow
+            - 0.1 * phase_delta
+            + 0.5 * throughput_delta
+            - 5.0 * invalid_actions
+            + route_reward
+        )
+
+        feedback = (
+            f"reward_mode=clearing progress_delta={ev_progress_delta:.3f} "
+            f"ev_wait_delta={ev_wait_delta:.1f}s queue={current['total_queue']:.1f} "
+            f"throughput_delta={throughput_delta} invalid_actions={invalid_actions} "
+            f"route_edge={route_feedback.get('selected_edge', '') or '-'} "
+            f"route_delta={route_delta:.1f} route_backtrack={int(bool(route_feedback.get('is_backtrack')))} "
+            f"route_invalid={int(bool(route_feedback.get('invalid')))}"
+        )
+        return reward, feedback
+
     def _normalize_reward(self, reward: float) -> float:
-        return max(self.REWARD_MIN, min(self.REWARD_MAX, float(reward)))
+        lo, hi = self._reward_bounds()
+        return max(lo, min(hi, float(reward)))
 
     def _collect_metrics(self) -> dict[str, Any]:
         total_queue = 0.0
@@ -726,11 +851,26 @@ class DynamicCorridorEnvironment(Environment):
             "phase_changes": self._phase_changes,
         }
 
+    def _corridor_eval_metrics(self, metrics: dict[str, Any]) -> dict[str, Any]:
+        """Structured metrics for rubrics / baselines (no string parsing)."""
+        n_tls = max(1, len(self.scenario.tls_ids))
+        mean_q = float(metrics.get("total_queue", 0.0)) / n_tls
+        return {
+            "reward_mode": self._reward_mode,
+            "invalid_action_count_episode": self._invalid_actions_episode,
+            "mean_corridor_queue": round(mean_q, 3),
+            "ev_travel_time_s": round(float(metrics.get("ev_travel_time", 0.0)), 3),
+            "ev_clearing_success": bool(metrics.get("ev_arrived")),
+            "episode_timeout": bool(self._done and not metrics.get("ev_arrived")),
+            "n_signalized_intersections": n_tls,
+        }
+
     def _observe(self, reward: float, feedback: str) -> DynamicCorridorObservation:
         metrics = self._last_metrics if self._traci is not None else self._empty_metrics()
         intersections = [self._intersection_observation(tls_id) for tls_id in self.scenario.tls_ids]
+        eval_block = self._corridor_eval_metrics(metrics)
         return DynamicCorridorObservation(
-            task_id=self.scenario.task_id,
+            task_id=self._state.task_id,
             sim_time=metrics["sim_time"],
             step=self._state.step_count,
             intersections=intersections,
@@ -744,6 +884,7 @@ class DynamicCorridorEnvironment(Environment):
                 "throughput": metrics["throughput"],
                 "phase_changes": metrics["phase_changes"],
                 "agent_runtime": self._agent_runtime.state(),
+                **eval_block,
             },
             reward=reward,
             done=self._done,
@@ -806,6 +947,7 @@ class DynamicCorridorEnvironment(Environment):
         )
 
     def _sync_state(self, metrics: dict[str, Any]) -> None:
+        n_tls = max(1, len(self.scenario.tls_ids))
         self._state.sim_time = metrics["sim_time"]
         self._state.cumulative_reward = round(self._cumulative_reward, 3)
         self._state.ev_arrived = metrics["ev_arrived"]
@@ -817,6 +959,14 @@ class DynamicCorridorEnvironment(Environment):
         self._state.phase_changes = metrics["phase_changes"]
         self._state.agent_runtime = self._agent_runtime.state()
         self._state.done = self._done
+        self._state.reward_mode = self._reward_mode
+        self._state.invalid_action_count_episode = self._invalid_actions_episode
+        self._state.mean_corridor_queue = round(float(metrics["total_queue"]) / n_tls, 3)
+        self._state.ev_clearing_success = bool(metrics["ev_arrived"])
+        self._state.episode_timeout = bool(self._done and not metrics["ev_arrived"])
+        self._state.episode_seed = int(self.seed)
+        if self.rubric is None:
+            self._state.last_rubric_score = None
 
     def _valid_green_phases(self, tls_id: str) -> list[int]:
         program = self._traci.trafficlight.getAllProgramLogics(tls_id)[0]

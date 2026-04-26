@@ -288,7 +288,7 @@ class PpoTrainer:
         torch = self.torch
         self.buffer.clear()
         self.model.eval()
-        observation = env.reset(self.task_id)
+        observation = env.reset(task_id=self.task_id)
         total_reward = 0.0
         queue_sum = 0.0
         step_count = 0

@@ -112,7 +112,10 @@ class DynamicCorridorObservation(Observation):
     ev: EVObservation = Field(default_factory=EVObservation)
     route_choice: RouteChoiceObservation = Field(default_factory=RouteChoiceObservation)
     global_metrics: dict[str, Any] = Field(default_factory=dict)
-    reward: float = Field(0.0, description="Reward from the previous action, in [0, 1] (weight-based v2).")
+    reward: float = Field(
+        0.0,
+        description="Last-step reward; range depends on DYNAMIC_CORRIDOR_REWARD_MODE (clearing ~[-10,10], route_weights [0,1]).",
+    )
     done: bool = Field(False, description="Whether the episode has ended.")
     feedback: str = Field("", description="Human-readable summary of the last transition.")
 
@@ -137,3 +140,32 @@ class DynamicCorridorState(State):
         description="Read-only decentralized intersection-agent runtime metadata.",
     )
     done: bool = Field(False, description="Whether the episode is complete.")
+    reward_mode: str = Field(
+        "clearing",
+        description="Active reward mode: 'clearing' (default) or 'route_weights'.",
+    )
+    invalid_action_count_episode: int = Field(
+        0,
+        ge=0,
+        description="Cumulative invalid actions (phase + route) this episode.",
+    )
+    mean_corridor_queue: float = Field(
+        0.0,
+        description="Mean halted vehicles per signalized intersection (corridor average).",
+    )
+    ev_clearing_success: bool = Field(
+        False,
+        description="Whether the EV has reached its destination (current frame).",
+    )
+    episode_timeout: bool = Field(
+        False,
+        description="True if the episode ended without EV arrival (timeout).",
+    )
+    episode_seed: int | None = Field(
+        None,
+        description="RNG seed used for this episode (from reset), if set.",
+    )
+    last_rubric_score: float | None = Field(
+        None,
+        description="Last OpenEnv rubric score from the previous step, if a rubric is configured.",
+    )
